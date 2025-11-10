@@ -1,0 +1,19 @@
+.room-card img {
+  width: 600px;
+  height: 300px;
+  object-fit: cover;
+  background-color: #f0f8ff;
+  margin-right: 5px;
+}
+.room-card{
+margin: 4px;
+margin-right: 4px;
+
+}
+hr{
+    border: solid #f0f8ff 5px;
+   
+}
+
+
+

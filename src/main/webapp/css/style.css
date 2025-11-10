@@ -1,0 +1,335 @@
+/* 🔄 Reset básico para remover margens e paddings padrão dos navegadores */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* 🌐 Estilo geral do corpo da página */
+body {
+  font-family: 'Segoe UI', sans-serif; /* Fonte moderna e legível */
+  line-height: 1.6;                    /* Espaçamento entre linhas para melhor leitura */
+  background-color: #f0f8ff;           /* Fundo claro e suave */
+  color: #333;                         /* Cor de texto padrão escura */
+}
+
+/* 📦 Container centralizado com largura máxima */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;       /* Centraliza horizontalmente */
+  padding: 0 20px;      /* Espaçamento lateral interno */
+}
+
+/* 🔘 Botões genéricos */
+.btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  margin-left: 5px;
+  margin-bottom: 6px;
+  cursor: pointer;
+  transition: background-color 0.3s ease; /* Suaviza a mudança de cor ao passar o mouse */
+}
+
+/* 🔵 Botão principal (azul escuro) */
+.btn-primary {
+  background-color: #1e40af;
+  color: #ffd700;
+}
+
+.btn-primary:hover {
+  background-color: #1c3aa9;
+}
+
+/* 🔷 Botão secundário (azul claro) */
+.btn-secondary {
+  background-color: #ffd700;
+  color: #1e40af;
+}
+
+.btn-secondary:hover {
+  background-color: #c7d2fe;
+}
+
+/* 🧭 Cabeçalho do site */
+header {
+  background-color: #60a2dd;
+  padding: 20px 0;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05); /* Sombra leve abaixo do header */
+  height: 100px;
+  display: flex;
+  justify-content: center;
+}
+
+/* 🔗 Conteúdo do cabeçalho: logo, menu e botões */
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+ padding: 0 20px;
+}
+
+
+
+
+/* 🔗 Menu de navegação */
+.menu a {
+  
+  margin: 0 15px;
+  text-decoration: none;
+  color: #ffd700;
+  font-weight: 500;
+}
+
+.menu a:hover {
+  text-decoration: underline;
+}
+/* 🌅 Seção Logo Isso evita que a logo fique desproporcional. */
+.logo img {
+  max-width: 90px; /* imita a largura*/
+  max-height: 80px;
+}
+
+/* 🌅 Seção Hero (destaque inicial) */
+.hero {
+  background: url('Praião.jpg') center/cover no-repeat;
+  color: white;
+  text-align: center;
+  padding: 100px 20px;
+}
+
+.hero h2 {
+  font-size: 48px;
+  margin-bottom: 20px;
+}
+
+.hero p {
+  font-size: 20px;
+  margin-bottom: 30px;
+}
+
+.hero-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+}
+
+/* 🛏️ Seção de Quartos */
+.rooms h2 {
+  text-align: center;
+  color: #1e40af;
+  margin-bottom: 40px;
+}
+
+/* 📦 Lista de quartos em grid responsivo */
+.room-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 30px;
+}
+
+/* 🧾 Card individual de quarto */
+.room-card {
+  background-color: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+  transition: transform 0.3s ease;
+  padding-bottom: 20px;
+  margin-left: 5px;
+}
+
+.room-card:hover {
+  transform: translateY(-5px); /* Efeito de elevação ao passar o mouse */
+}
+
+.room-card img {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+}
+
+.room-card h3 {
+  margin: 15px;
+  color: #1e40af;
+}
+
+.room-card p {
+  margin: 0 15px 10px;
+}
+.room-card button{
+
+  
+}
+
+/* 📋 Lista de comodidades */
+.comodidades {
+  list-style: none;
+  margin: 0 15px 10px;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.comodidades li {
+  background-color: #e0e7ff;
+  color: #1e40af;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+/* 💰 Preço do quarto */
+.preco {
+  display: block;
+  margin: 0 15px 10px;
+  font-weight: bold;
+  color: #1e40af;
+}
+
+/* 💬 Seção de Depoimentos */
+.testimonials {
+  background-color: #eef2ff;
+  padding: 60px 20px;
+}
+
+.testimonials h2 {
+  text-align: center;
+  color: #1e40af;
+  margin-bottom: 40px;
+}
+
+.testimonial-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 30px;
+}
+
+/* 🧍 Card de depoimento */
+.testimonial-card {
+  background-color: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+  text-align: center;
+}
+
+.testimonial-card .avatar img {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  margin-bottom: 10px;
+}
+
+.stars {
+  color: #facc15; /* Amarelo para estrelas */
+  margin-top: 10px;
+}
+
+/* 📞 Seção de Contato */
+.contact {
+  padding: 60px 20px;
+}
+
+.contact h2 {
+  text-align: center;
+  color: #1e40af;
+  margin-bottom: 30px;
+}
+
+form {
+  max-width: 600px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+input, textarea {
+  padding: 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 16px;
+}
+
+/* 🧭 Rodapé */
+footer {
+  background-color: #1e3a8a;
+  color: #ffd700;
+  padding: 40px 20px 20px;
+}
+
+.footer-content {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 30px;
+  margin-bottom: 20px;
+}
+
+.footer-column h3 {
+  margin-bottom: 10px;
+}
+
+.footer-column ul {
+  list-style: none;
+  padding: 0;
+}
+
+.footer-column ul li a {
+  color: #ffd700;
+  text-decoration: none;
+}
+
+.footer-column ul li a:hover {
+  text-decoration: underline;
+}
+
+.footer-bottom {
+  text-align: center;
+  font-size: 14px;
+  border-top: 1px solid #ffd700;
+  padding-top: 10px;
+}
+/* Modal reserva */
+.modal {
+  display: none; 
+  position: fixed;
+  z-index: 999;
+  left: 0;
+  top: 0;
+  width: 100%; 
+  height: 100%;
+  background-color: rgba(0,0,0,0.6);
+  justify-content: center;
+  align-items: center;
+}
+
+.modal-content {
+  background: white;
+  padding: 30px;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 400px;
+  position: relative;
+  animation: fadeIn 0.3s ease;
+}
+
+.close-btn {
+  position: absolute;
+  top: 10px;
+  right: 15px;
+  font-size: 24px;
+  color: #444;
+  cursor: pointer;
+}
+
+.close-btn:hover {
+  color: red;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
