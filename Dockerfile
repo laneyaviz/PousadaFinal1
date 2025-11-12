@@ -1,34 +1,34 @@
-# Etapa 1: Compilar código Java
-FROM eclipse-temurin:17-jdk AS build
+# Etapa 1 — Compilar código-fonte Java (Java 11)
+FROM eclipse-temurin:11-jdk AS build
 
 WORKDIR /app
 
-# Copia código-fonte
-COPY src/main/java/ /app/src/main/java/
-COPY src/main/webapp/ /app/src/main/webapp/
+# Copia código fonte
+COPY src/ /app/src/
+COPY webapps/ /app/webapps/
 
-# Cria diretório de classes compiladas
-RUN mkdir -p /app/src/main/webapp/WEB-INF/classes
+# Cria diretório para classes compiladas
+RUN mkdir -p /app/webapps/WEB-INF/classes
 
-# Cria pasta para dependências
-RUN mkdir -p /app/lib
-
-# Baixa dependências necessárias
-RUN wget -O /app/lib/jakarta-servlet.jar https://repo1.maven.org/maven2/jakarta/servlet/jakarta.servlet-api/5.0.0/jakarta.servlet-api-5.0.0.jar && \
+# Baixa dependências necessárias (Jakarta Servlet + MySQL)
+RUN apt-get update && apt-get install -y wget && \
+    mkdir -p /app/lib && \
+    wget -O /app/lib/jakarta-servlet.jar https://repo1.maven.org/maven2/jakarta/servlet/jakarta.servlet-api/5.0.0/jakarta.servlet-api-5.0.0.jar && \
     wget -O /app/lib/mysql-connector.jar https://repo1.maven.org/maven2/com/mysql/mysql-connector-j/8.0.33/mysql-connector-j-8.0.33.jar
 
-# Compila os arquivos Java com classpath explícito
-RUN find /app/src/main/java -name "*.java" > sources.txt && \
-    javac -cp "/app/lib/jakarta-servlet.jar:/app/lib/mysql-connector.jar" -d /app/src/main/webapp/WEB-INF/classes @sources.txt
+# Compila as classes Java com o classpath correto
+RUN find /app/src -name "*.java" > sources.txt && \
+    javac -cp "/app/lib/jakarta-servlet.jar:/app/lib/mysql-connector.jar" \
+          -d /app/webapps/WEB-INF/classes @sources.txt
 
-# Etapa 2: Executar no Tomcat
-FROM tomcat:10.1.26-jdk17
+# Etapa 2 — Executar no Tomcat 10 com Java 11
+FROM tomcat:10.1.26-jdk11
 
-# Remove o ROOT padrão do Tomcat
+# Remove o app padrão
 RUN rm -rf /usr/local/tomcat/webapps/ROOT
 
-# Copia a aplicação compilada
-COPY --from=build /app/src/main/webapp /usr/local/tomcat/webapps/ROOT
+# Copia o conteúdo da aplicação compilada
+COPY --from=build /app/webapps /usr/local/tomcat/webapps/ROOT
 
 EXPOSE 8080
 
