@@ -2,38 +2,42 @@ package utils;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.SQLException;
 
 public class Conexao {
-    private static Connection conexao;
+    private static Connection conexao = null;
 
     public static Connection getConexao() {
         if (conexao == null) {
             try {
-                String host = System.getenv("DB_HOST");
-                String port = System.getenv("DB_PORT");
-                String db   = System.getenv("DB_NAME");
+                // Lê variáveis de ambiente (Render/Railway)
+                String url = System.getenv("DB_URL");
                 String user = System.getenv("DB_USER");
                 String pass = System.getenv("DB_PASS");
 
-                if (host == null) {
-                    // fallback local (para teste no Eclipse)
-                    host = "localhost";
-                    port = "3306";
-                    db = "pousada_db";
+                // ⚙️ Fallback para ambiente local (Eclipse)
+                if (url == null || user == null || pass == null) {
+                    url = "jdbc:mysql://localhost:3306/pousada_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC";
                     user = "root";
                     pass = "root";
                 }
 
-                String url = "jdbc:mysql://" + host + ":" + port + "/" + db
-                           + "?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC";
-
+                // Carrega o driver MySQL
                 Class.forName("com.mysql.cj.jdbc.Driver");
-                conexao = DriverManager.getConnection(url, user, pass);
-                System.out.println("✅ Conectado ao banco MySQL: " + url);
 
-            } catch (Exception e) {
+                // Conecta
+                conexao = DriverManager.getConnection(url, user, pass);
+                System.out.println("✅ Conectado com sucesso ao banco: " + url);
+
+            } catch (ClassNotFoundException e) {
+                System.err.println("❌ Driver MySQL não encontrado!");
                 e.printStackTrace();
-                throw new RuntimeException("❌ Erro ao conectar ao banco: " + e.getMessage());
+            } catch (SQLException e) {
+                System.err.println("❌ Erro de conexão SQL: " + e.getMessage());
+                e.printStackTrace();
+            } catch (Exception e) {
+                System.err.println("❌ Erro inesperado ao conectar: " + e.getMessage());
+                e.printStackTrace();
             }
         }
         return conexao;
