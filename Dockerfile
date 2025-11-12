@@ -4,11 +4,11 @@ FROM eclipse-temurin:17-jdk AS build
 WORKDIR /app
 
 # Copia código-fonte e recursos
-COPY src/main/java/ /app/src/
-COPY src/main/webapp/ /app/WebContent/
+COPY src/ /app/src/
+COPY webapps/ /app/webapps/
 
 # Cria diretório de classes compiladas
-RUN mkdir -p /app/WebContent/WEB-INF/classes
+RUN mkdir -p /app/webapps/WEB-INF/classes
 
 # Cria pasta para dependências
 RUN mkdir -p /app/lib
@@ -19,7 +19,7 @@ RUN wget -O /app/lib/jakarta-servlet.jar https://repo1.maven.org/maven2/jakarta/
 
 # Compila os arquivos Java com classpath explícito
 RUN find /app/src -name "*.java" > sources.txt && \
-    javac -cp "/app/lib/jakarta-servlet.jar:/app/lib/mysql-connector.jar" -d /app/WebContent/WEB-INF/classes @sources.txt
+    javac -cp "/app/lib/jakarta-servlet.jar:/app/lib/mysql-connector.jar" -d /app/webapps/WEB-INF/classes @sources.txt
 
 # Etapa 2: Executar no Tomcat
 FROM tomcat:10.1.26-jdk17
@@ -28,7 +28,7 @@ FROM tomcat:10.1.26-jdk17
 RUN rm -rf /usr/local/tomcat/webapps/ROOT
 
 # Copia a aplicação compilada
-COPY --from=build /app/WebContent /usr/local/tomcat/webapps/ROOT
+COPY --from=build /app/webapps /usr/local/tomcat/webapps/ROOT
 
 EXPOSE 8080
 
