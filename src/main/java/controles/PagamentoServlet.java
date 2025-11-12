@@ -2,7 +2,6 @@ package controles;
 
 import java.io.IOException;
 import java.time.LocalDate;
-
 import DAO.PagamentoDAO;
 import DAO.ReservaDAO;
 import jakarta.servlet.ServletException;
@@ -46,24 +45,23 @@ public class PagamentoServlet extends HttpServlet {
                 return;
             }
 
-            // 🔹 Cria o pagamento
+            System.out.println("💰 Processando pagamento da reserva " + idReserva + " via " + metodoPagamento);
+
             Pagamentos novoPagamento = new Pagamentos();
             novoPagamento.setIdReserva(idReserva);
             novoPagamento.setValorTotal(valorTotal);
             novoPagamento.setDataPagamento(LocalDate.now());
             novoPagamento.setFormaPagamento(metodoPagamento);
-            novoPagamento.setStatus("APROVADO");
 
             pagamentoDAO.salvar(novoPagamento);
 
-            // 🔹 Atualiza o status da reserva
             Reserva reserva = reservaDAO.buscarPorId(idReserva);
             if (reserva != null) {
                 reserva.setStatus("CONFIRMADA");
                 reservaDAO.atualizar(reserva);
             }
 
-            response.sendRedirect("ReservaServlet?acao=listar&msg=pagamento_confirmado");
+            response.sendRedirect("ReservaServlet?acao=minhas_reservas&msg=pagamento_ok");
 
         } catch (Exception e) {
             e.printStackTrace();
