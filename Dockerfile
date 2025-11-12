@@ -1,29 +1,25 @@
-# Etapa 1: Compilar as classes Java
+# Etapa 1: Usar JDK para compilar as classes Java
 FROM eclipse-temurin:17-jdk AS build
 
 WORKDIR /app
 
-# Copia o código-fonte
-COPY src/ src/
-COPY WebContent/ WebContent/
+# Copia código-fonte Java e JSP
+COPY src/ /app/src/
 
-# Cria o diretório de classes compiladas
-RUN mkdir -p WebContent/WEB-INF/classes
+# Compila as classes Java (ajuste se necessário)
+RUN mkdir -p /app/src/WEB-INF/classes && \
+    find /app/src -name "*.java" > sources.txt && \
+    javac -d /app/src/WEB-INF/classes @sources.txt
 
-# Compila todos os .java para dentro de WEB-INF/classes
-RUN find src -name "*.java" > sources.txt && javac -d WebContent/WEB-INF/classes @sources.txt
-
-# Etapa 2: Rodar no Tomcat
+# Etapa 2: Servir via Tomcat
 FROM tomcat:10.1.26-jdk17
 
-# Remove o app padrão
+# Remove o ROOT padrão do Tomcat
 RUN rm -rf /usr/local/tomcat/webapps/ROOT
 
-# Copia o app compilado para o Tomcat
-COPY --from=build /app/WebContent /usr/local/tomcat/webapps/ROOT
+# Copia a aplicação para a pasta ROOT do Tomcat
+COPY --from=build /app/src /usr/local/tomcat/webapps/ROOT
 
-# Expõe a porta 8080 (Render usa automaticamente)
 EXPOSE 8080
 
-# Inicia o Tomcat
 CMD ["catalina.sh", "run"]
