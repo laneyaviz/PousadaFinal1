@@ -1,88 +1,64 @@
-<%@ page language="java" contentType="text/html; charset=UTF-8"
-    pageEncoding="UTF-8"%>
-<%@ page import="java.util.List" %>
-<%@ page import="modelos.Reserva" %>
-<%@ page import="modelos.Hospedes" %>
-<%@ page import="java.text.DecimalFormat" %>
-<%@ page import="java.text.SimpleDateFormat" %>
-<% 
-    // Formatadores para moeda e data
-    DecimalFormat df = new DecimalFormat("#,##0.00");
-    SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ page import="java.util.*, modelos.Reserva" %>
+<%
+    List<Reserva> reservasHospede = (List<Reserva>) request.getAttribute("reservasHospede");
 %>
+
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="UTF-8">
-    <title>Minhas Reservas - Pousada Azul do Mar</title>
-    <link rel="stylesheet" href="css/style.css"/>
+<meta charset="UTF-8">
+<title>Minhas Reservas - Pousada Azul do Mar</title>
+<link rel="stylesheet" href="css/style.css"/>
 </head>
 <body>
-    
-    <%@ include file="_header.jsp" %>
-    
-    <% 
+<%@ include file="_header.jsp" %>
 
-        if (usuarioLogado == null) {
-            response.sendRedirect("entrar.jsp?erro=login_necessario");
-            return;
-        }
+<main class="container" style="padding:40px;">
+    <h2>Minhas Reservas</h2>
 
-        // Captura a lista de reservas enviada pelo ReservaServlet
-        List<Reserva> reservas = (List<Reserva>) request.getAttribute("reservasHospede");
+    <%
+        if (reservasHospede == null || reservasHospede.isEmpty()) {
     %>
-    
-    <main class="container" style="padding: 40px 0;">
-        <h2>Olá, <%= usuarioLogado.getNome() %>!
-        Suas Reservas</h2>
-        
-        <% 
-        if (reservas == null || reservas.isEmpty()) { 
-        %>
-            <p style="margin-top: 20px;">Você não possui nenhuma reserva ativa no momento.</p>
-            <p><a href="quartos.jsp" class="btn btn-primary">Fazer uma Nova Reserva</a></p>
-        <% 
-        } else { 
-        %>
-        
-        <table class="data-table" style="margin-top: 20px;">
+        <p>Você ainda não possui reservas.</p>
+    <%
+        } else {
+    %>
+        <table border="1" cellpadding="8" cellspacing="0" style="width:100%; border-collapse:collapse;">
             <thead>
                 <tr>
-                    <th>ID Res.</th>
+                    <th>ID</th>
                     <th>Quarto</th>
                     <th>Check-in</th>
                     <th>Check-out</th>
-                    <th>Hóspedes</th>
+                    <th>Pessoas</th>
                     <th>Valor Total</th>
                     <th>Status</th>
                 </tr>
             </thead>
             <tbody>
-                <% 
-                    for (Reserva reserva : reservas) { 
-                %>
-                    <tr>
-                        <td><%= reserva.getIdReserva() %></td>
-                        
-                        <td>Quarto <%= reserva.getQuarto().getNumero() %> - <%= reserva.getQuarto().getTipo() %></td>
-                        
-                        <td><%= sdf.format(reserva.getDataCheckin()) %></td>
-                        <td><%= sdf.format(reserva.getDataCheckout()) %></td>
-                        <td><%= reserva.getNumAdultos() %> A / <%= reserva.getNumCriancas() %> C</td>
-                        <td>R$ <%= df.format(reserva.getValorTotal()) %></td>
-                        <td>
-                            <span class="status <%= reserva.getStatus().toLowerCase() %>"><%= reserva.getStatus() %></span>
-                        </td>
-                    </tr>
-                <%  
-                    }
-                %>
+            <%
+                for (Reserva r : reservasHospede) {
+            %>
+                <tr>
+                    <td><%= r.getIdReserva() %></td>
+                    <td><%= (r.getQuarto() != null ? r.getQuarto().getTipo() : "N/D") %></td>
+                    <td><%= r.getDataCheckin() %></td>
+                    <td><%= r.getDataCheckout() %></td>
+                    <td><%= r.getNumAdultos() %> / <%= r.getNumCriancas() %></td>
+                    <td>R$ <%= r.getValorTotal() %></td>
+                    <td><%= r.getStatus() %></td>
+                </tr>
+            <%
+                }
+            %>
             </tbody>
         </table>
-        
-        <% } %>
-    </main>
-    
-    <%@ include file="_footer.jsp" %>
+    <%
+        }
+    %>
+</main>
+
+<%@ include file="_footer.jsp" %>
 </body>
 </html>

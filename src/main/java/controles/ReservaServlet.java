@@ -1,8 +1,7 @@
 package controles;
 
 import java.io.IOException;
-import java.sql.Date; 
-import java.util.concurrent.TimeUnit;
+import java.time.LocalDate;
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -10,9 +9,10 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import java.time.temporal.ChronoUnit;
 
 import DAO.ReservaDAO;
-import DAO.QuartoDAO; 
+import DAO.QuartoDAO;
 import modelos.Hospedes;
 import modelos.Reserva;
 import modelos.Quartos;
@@ -22,198 +22,289 @@ public class ReservaServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
 
     private ReservaDAO reservaDAO = new ReservaDAO();
-    private QuartoDAO quartoDAO = new QuartoDAO(); 
+    private QuartoDAO quartoDAO = new QuartoDAO();
 
-    protected void doGet(HttpServletRequest request, HttpServletResponse response) 
+    private Hospedes getAdminLogado(HttpSession session) {
+        Hospedes usuario = (Hospedes) session.getAttribute("usuarioLogado");
+        if (usuario != null && usuario.getIdHospede() == 1) {
+            return usuario;
+        }
+        return null;
+    }
+
+    private Hospedes getHospedeLogado(HttpSession session) {
+        Hospedes usuario = (Hospedes) session.getAttribute("usuarioLogado");
+        if (usuario != null && usuario.getIdHospede() != 1) {
+            return usuario;
+        }
+        return null;
+    }
+
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        
+
         String acao = request.getParameter("acao");
-        
+        Hospedes admin = getAdminLogado(request.getSession());
+
         try {
             if ("listar".equals(acao)) {
-                request.setAttribute("reservas", reservaDAO.listar());
-                RequestDispatcher rd = request.getRequestDispatcher("lista_reserva.jsp");
-                rd.forward(request, response);
-            
-            } else if ("remarcar".equals(acao)) {
-                // Prepara formulário de remarcação
-                int idReserva = Integer.parseInt(request.getParameter("id"));
-                Reserva reserva = reservaDAO.buscarPorId(idReserva);
-                
-                // Buscar dados do Quarto para capacidade e preço
-                Quartos quarto = quartoDAO.buscarporId(reserva.getIdQuarto());
-                // CORREÇÃO: Usar setQuarto(Quartos)
-                reserva.setQuarto(quarto); 
-                
-                request.setAttribute("reserva", reserva);
-                RequestDispatcher rd = request.getRequestDispatcher("remarcar_reserva.jsp");
-                rd.forward(request, response);
-                
-            } else if ("reembolsar".equals(acao)) {
-                // Altera o status da reserva para CANCELADA
-                int idReserva = Integer.parseInt(request.getParameter("id"));
-                Reserva reserva = reservaDAO.buscarPorId(idReserva);
-                if (reserva != null && !"CANCELADA".equals(reserva.getStatus())) {
-                    reserva.setStatus("CANCELADA"); 
-                    reservaDAO.atualizar(reserva);
-                    response.sendRedirect("ReservaServlet?acao=listar&msg=cancelada_sucesso");
-                } else {
-                     response.sendRedirect("ReservaServlet?acao=listar&erro=cancelamento_falhou");
-                }
-            } else if ("minhas_reservas".equals(acao)) {
-                // Lista reservas do Hóspede logado
-                HttpSession session = request.getSession(false);
-                Hospedes usuarioLogado = (session != null) ? (Hospedes) session.getAttribute("usuarioLogado") : null;
-
-                if (usuarioLogado == null) {
-                    response.sendRedirect("entrar.jsp?erro=login_necessario");
+                if (admin == null) {
+                    response.sendRedirect(request.getContextPath() + "/entrar.jsp?erro=acesso_negado");
                     return;
                 }
-                
-                request.setAttribute("reservasHospede", reservaDAO.listarPorHospede(usuarioLogado.getIdHospede()));
-                RequestDispatcher rd = request.getRequestDispatcher("minhas_reservas.jsp");
-                rd.forward(request, response);
-
+                listarReservas(request, response);
+            } else if ("remarcar".equals(acao)) {
+                prepararRemarcacao(request, response, admin != null);
+            } else if ("minhas_reservas".equals(acao)) {
+                listarMinhasReservas(request, response);
             } else {
                 response.sendRedirect(request.getContextPath() + "/index.jsp");
             }
-        } catch (NumberFormatException e) {
-            response.sendRedirect(request.getContextPath() + "/erro.jsp?msg=ID_Invalido");
         } catch (Exception e) {
-             response.sendRedirect(request.getContextPath() + "/erro.jsp?msg=" + e.getMessage());
+            e.printStackTrace();
+            response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Erro interno no servidor.");
         }
     }
 
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        
         String acao = request.getParameter("acao");
+        System.out.println("AÇÃO RECEBIDA: " + acao); // ✅ debug
 
-        // --- 1. LÓGICA DE REMARCAÇÃO (ADMIN) ---
-        if ("remarcar".equals(acao)) {
-            try {
-                int idReserva = Integer.parseInt(request.getParameter("idReserva"));
-                Reserva reserva = reservaDAO.buscarPorId(idReserva);
-
-                if (reserva != null) {
-                    Date novaDataCheckin = Date.valueOf(request.getParameter("dataEntrada"));
-                    Date novaDataCheckout = Date.valueOf(request.getParameter("dataSaida"));
-                    int novosAdultos = Integer.parseInt(request.getParameter("numAdultos")); 
-                    int novasCriancas = Integer.parseInt(request.getParameter("numCriancas"));
-                    
-                    long diffMillis = novaDataCheckout.getTime() - novaDataCheckin.getTime();
-                    long dias = TimeUnit.DAYS.convert(diffMillis, TimeUnit.MILLISECONDS);
-                    Quartos quarto = quartoDAO.buscarporId(reserva.getIdQuarto());
-
-                    // VALIDAÇÃO 1: LIMITE DE 7 DIAS
-                    if (dias > 7 || dias <= 0) {
-                        throw new RuntimeException("Datas inválidas para remarcação (Limite máximo: 7 dias)."); 
-                    }
-                    
-                    // VALIDAÇÃO 2: CAPACIDADE
-                    if ((novosAdultos + novasCriancas) > quarto.getCapacidadeMaxima()) {
-                         throw new RuntimeException("Capacidade excedida para o quarto.");
-                    }
-                    
-                    // VALIDAÇÃO 3: DISPONIBILIDADE (Excluindo a própria reserva da checagem)
-                    if (!reservaDAO.verificarDisponibilidadeExcluindoPropria(reserva.getIdQuarto(), novaDataCheckin, novaDataCheckout, idReserva)) {
-                        throw new RuntimeException("Quarto indisponível nas novas datas.");
-                    }
-                    
-                    // ATUALIZAÇÃO E RECÁLCULO
-                    reserva.setDataCheckin(novaDataCheckin);
-                    reserva.setDataCheckout(novaDataCheckout);
-                    reserva.setNumAdultos(novosAdultos);
-                    reserva.setNumCriancas(novasCriancas);
-                    
-                    double precoDiaria = quarto.getPrecoDiaria();
-                    double valorTotal = dias * precoDiaria;
-                    reserva.setValorTotal(valorTotal);
-                    
-                    reservaDAO.atualizar(reserva); 
-                    response.sendRedirect("ReservaServlet?acao=listar&msg=remarcada");
-                }
-            } catch (Exception e) {
-                request.setAttribute("erroRemarcacao", "Erro ao remarcar: " + e.getMessage());
-                // Recarrega os dados para o formulário
-                try {
-                    int idReserva = Integer.parseInt(request.getParameter("idReserva"));
-                    Reserva reservaOriginal = reservaDAO.buscarPorId(idReserva);
-                    // CORREÇÃO AQUI TAMBÉM: Usar setQuarto(Quartos)
-                    reservaOriginal.setQuarto(quartoDAO.buscarporId(reservaOriginal.getIdQuarto()));
-                    request.setAttribute("reserva", reservaOriginal);
-                } catch(Exception ignored) {} 
-                request.getRequestDispatcher("remarcar_reserva.jsp").forward(request, response);
+        try {
+            if ("reservar".equals(acao)) {
+                criarReserva(request, response);
+            } else if ("finalizarRemarcacao".equals(acao)) {
+                finalizarRemarcacao(request, response);
+            } else {
+                response.sendError(HttpServletResponse.SC_NOT_FOUND);
             }
+        } catch (Exception e) {
+            e.printStackTrace();
+            response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Erro interno no servidor.");
+        }
+    }
+
+    private void listarReservas(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        request.setAttribute("reservas", reservaDAO.listar());
+        RequestDispatcher rd = request.getRequestDispatcher("/lista_reserva.jsp");
+        rd.forward(request, response);
+    }
+    
+    private void listarMinhasReservas(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        Hospedes hospede = getHospedeLogado(request.getSession());
+        if (hospede == null) {
+            response.sendRedirect(request.getContextPath() + "/entrar.jsp?erro=login_necessario");
             return;
         }
-
-        // --- 2. LÓGICA DE INSERÇÃO DE NOVA RESERVA (USUÁRIO) ---
-        
-        HttpSession session = request.getSession(false);
-        Hospedes usuarioLogado = (session != null) ? (Hospedes) session.getAttribute("usuarioLogado") : null;
-
-        if (usuarioLogado == null) {
-            response.sendRedirect("entrar.jsp?erro=login_necessario");
-            return;
-        }
+        request.setAttribute("reservasHospede", reservaDAO.buscarPorIdHospede(hospede.getIdHospede()));
+        RequestDispatcher rd = request.getRequestDispatcher("/minhas_reservas.jsp");
+        rd.forward(request, response);
+    }
+    
+    private void prepararRemarcacao(HttpServletRequest request, HttpServletResponse response, boolean isAdmin)
+            throws ServletException, IOException {
+        int idReserva = 0;
+        String hospedeTarget = request.getContextPath() + "/minhas_reservas.jsp?erro=";
+        String targetRedirect = isAdmin ? "ReservaServlet?acao=listar&erro=" : hospedeTarget;
         
         try {
-            int idHospede = usuarioLogado.getIdHospede();
+            idReserva = Integer.parseInt(request.getParameter("id"));
+        } catch (NumberFormatException e) {
+            response.sendRedirect(targetRedirect + "id_invalido");
+            return;
+        }
+        Reserva reserva = reservaDAO.buscarPorId(idReserva);  
+        if (reserva == null) {
+            response.sendRedirect(targetRedirect + "/reserva_nao_encontrada");
+            return;
+        }
+        if (!isAdmin) {
+            Hospedes hospede = getHospedeLogado(request.getSession());
+            if (hospede == null || hospede.getIdHospede() != reserva.getIdHospede()) {
+                response.sendRedirect(request.getContextPath() + "/minhas_reservas.jsp?erro=acesso_negado");
+                return;
+            }
+        }
+        Quartos quarto = quartoDAO.buscarPorId(reserva.getIdQuarto());
+        reserva.setQuarto(quarto);
+        request.setAttribute("reserva", reserva);
+        RequestDispatcher rd = request.getRequestDispatcher("/remarcar_reserva.jsp");
+        rd.forward(request, response);
+    }
+
+    private void criarReserva(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        Hospedes hospede = getHospedeLogado(request.getSession());
+        String quartoBase = request.getContextPath() + "/quartos.jsp?erro=";
+        
+        if (hospede == null) {
+            response.sendRedirect(request.getContextPath() + "/entrar.jsp?erro=login_necessario");
+            return;
+        }
+        try {
             int idQuarto = Integer.parseInt(request.getParameter("idQuarto"));
-            Date dataCheckin = Date.valueOf(request.getParameter("dataEntrada")); 
-            Date dataCheckout = Date.valueOf(request.getParameter("dataSaida")); 
-            int numAdultos = Integer.parseInt(request.getParameter("numAdultos")); 
-            int numCriancas = Integer.parseInt(request.getParameter("numCriancas")); 
-
-            // REGRA 1: VALIDAÇÃO DO LIMITE DE DIAS (7 DIAS)
-            long diffMillis = dataCheckout.getTime() - dataCheckin.getTime();
-            long dias = TimeUnit.DAYS.convert(diffMillis, TimeUnit.MILLISECONDS);
-
-            if (dias > 7 || dias <= 0) {
-                response.sendRedirect("quartos.jsp?erro=limite_dias");
+            LocalDate dataCheckin = LocalDate.parse(request.getParameter("dataEntrada"));
+            LocalDate dataCheckout = LocalDate.parse(request.getParameter("dataSaida"));
+            int numAdultos = Integer.parseInt(request.getParameter("numAdultos"));
+            int numCriancas = Integer.parseInt(request.getParameter("numCriancas"));
+            
+            if (dataCheckin.isAfter(dataCheckout) || dataCheckin.isEqual(dataCheckout) || dataCheckin.isBefore(LocalDate.now())) {
+                response.sendRedirect(quartoBase + "dados_invalidos");
                 return;
             }
             
-            // REGRA 2: BUSCA E VALIDAÇÃO DE CAPACIDADE
-            Quartos quarto = quartoDAO.buscarporId(idQuarto); 
+            long diffDays = ChronoUnit.DAYS.between(dataCheckin, dataCheckout);
             
-            if (quarto == null || (numAdultos + numCriancas) > quarto.getCapacidadeMaxima()) {
-                 response.sendRedirect("quartos.jsp?erro=capacidade_excedida");
-                 return;
+            if (diffDays > 7) {
+                response.sendRedirect(quartoBase + "limite_dias");
+                return;
             }
             
-            // REGRA 3: VERIFICAÇÃO DE DISPONIBILIDADE (Onde o erro de 'sempre ocupado' ocorre)
+            Quartos quarto = quartoDAO.buscarPorId(idQuarto);
+            
+            if (quarto == null) {
+                response.sendRedirect(quartoBase + "quarto_nao_encontrado");
+                return;
+            }
+            
+            if (numAdultos + numCriancas > quarto.getCapacidadeMaxima()) {
+                response.sendRedirect(quartoBase + "capacidade_excedida");
+                return;
+            }
+            
             if (!reservaDAO.verificarDisponibilidade(idQuarto, dataCheckin, dataCheckout)) {
-                response.sendRedirect("quartos.jsp?erro=indisponivel");
+                response.sendRedirect(quartoBase + "indisponivel");
                 return;
             }
             
-            // REGRA 4: CÁLCULO DO VALOR
             double precoDiaria = quarto.getPrecoDiaria();
-            double valorTotal = dias * precoDiaria;
+            double valorTotal = precoDiaria * diffDays;
             
-            // 5. INSERÇÃO DA RESERVA
             Reserva novaReserva = new Reserva();
-            novaReserva.setIdHospede(idHospede);
+            novaReserva.setIdHospede(hospede.getIdHospede()); 
             novaReserva.setIdQuarto(idQuarto);
             novaReserva.setDataCheckin(dataCheckin);
             novaReserva.setDataCheckout(dataCheckout);
-            novaReserva.setStatus("PENDENTE"); 
             novaReserva.setNumAdultos(numAdultos);
             novaReserva.setNumCriancas(numCriancas);
             novaReserva.setValorTotal(valorTotal);
+            novaReserva.setStatus("PENDENTE"); 
             
-            int idReservaGerada = reservaDAO.inserir(novaReserva); 
-
-            // 6.FLUXO DE PAGAMENTO: Redireciona
-            response.sendRedirect("pagamento.jsp?id_reserva=" + idReservaGerada); 
+            Reserva reservaSalva = reservaDAO.salvar(novaReserva);
+            
+            if (reservaSalva != null && reservaSalva.getIdReserva() > 0) {
+                reservaSalva.setQuarto(quarto); 
+                request.setAttribute("reserva", reservaSalva);
+                RequestDispatcher rd = request.getRequestDispatcher("/pagamento.jsp");
+                rd.forward(request, response);
+            } else {
+                response.sendRedirect(quartoBase + "/reserva_falha_bd");
+            }
+        } catch (IllegalArgumentException e) {
+            e.printStackTrace();
+            response.sendRedirect(quartoBase + "dados_invalidos");
+        }
+    }
+    
+    private void finalizarRemarcacao(HttpServletRequest request, HttpServletResponse response)
+            throws IOException, ServletException {
+        Hospedes usuario = (Hospedes) request.getSession().getAttribute("usuarioLogado");
+        boolean isAdmin = (usuario != null && usuario.getIdHospede() == 1);
+        String targetRedirect = isAdmin ? "/ReservaServlet?acao=listar" : "/ReservaServlet?acao=minhas_reservas";
+        
+        if (usuario == null) {
+            response.sendRedirect(request.getContextPath() + "/entrar.jsp?erro=login_necessario");
+            return;
+        }
+        
+        Reserva reservaOriginal = null;
+        try {
+            int idReserva = Integer.parseInt(request.getParameter("idReserva"));
+            LocalDate novaDataCheckin = LocalDate.parse(request.getParameter("dataEntrada"));
+            LocalDate novaDataCheckout = LocalDate.parse(request.getParameter("dataSaida"));
+            int novoNumAdultos = Integer.parseInt(request.getParameter("numAdultos"));
+            int novoNumCriancas = Integer.parseInt(request.getParameter("numCriancas"));
+            
+            reservaOriginal = reservaDAO.buscarPorId(idReserva);
+            
+            if (reservaOriginal == null) {
+                response.sendRedirect(targetRedirect + "&erro=reserva_nao_encontrada");
+                return;
+            }
+            
+            if (!isAdmin && reservaOriginal.getIdHospede() != usuario.getIdHospede()) {
+                response.sendRedirect("ReservaServlet?acao=minhas_reservas&erro=acesso_negado");
+                return;
+            }
+            
+            if (novaDataCheckin.isAfter(novaDataCheckout) || novaDataCheckin.isEqual(novaDataCheckout) || novaDataCheckin.isBefore(LocalDate.now())) {
+                request.setAttribute("erroRemarcacao", "Datas inválidas para a remarcação.");
+                request.setAttribute("reserva", reservaOriginal);
+                RequestDispatcher rd = request.getRequestDispatcher("/remarcar_reserva.jsp");
+                rd.forward(request, response);
+                return;
+            }
+            
+            long diffDays = ChronoUnit.DAYS.between(novaDataCheckin, novaDataCheckout);
+            
+            if (diffDays > 7) {
+                request.setAttribute("erroRemarcacao", "A reserva não pode ultrapassar 7 dias.");
+                request.setAttribute("reserva", reservaOriginal);
+                RequestDispatcher rd = request.getRequestDispatcher("/remarcar_reserva.jsp");
+                rd.forward(request, response);
+                return;
+            }
+            
+            Quartos quarto = quartoDAO.buscarPorId(reservaOriginal.getIdQuarto());
+            
+            if (quarto == null) {
+                response.sendRedirect(targetRedirect + "&erro=quarto_nao_encontrado");
+                return;
+            }
+            
+            if (novoNumAdultos + novoNumCriancas > quarto.getCapacidadeMaxima()) {
+                request.setAttribute("erroRemarcacao", "O número de hóspedes excede a capacidade do quarto.");
+                request.setAttribute("reserva", reservaOriginal);
+                RequestDispatcher rd = request.getRequestDispatcher("/remarcar_reserva.jsp");
+                rd.forward(request, response);
+                return;
+            }
+            
+            if (!reservaDAO.verificarDisponibilidadeExcluindoPropria(reservaOriginal.getIdQuarto(), novaDataCheckin, novaDataCheckout, idReserva)) {
+                request.setAttribute("erroRemarcacao", "O quarto não está disponível para as novas datas selecionadas.");
+                request.setAttribute("reserva", reservaOriginal);
+                RequestDispatcher rd = request.getRequestDispatcher("/remarcar_reserva.jsp");
+                rd.forward(request, response);
+                return;
+            }
+            
+            double precoDiaria = quarto.getPrecoDiaria();
+            double novoValorTotal = precoDiaria * diffDays;
+            
+            reservaOriginal.setDataCheckin(novaDataCheckin);
+            reservaOriginal.setDataCheckout(novaDataCheckout);
+            reservaOriginal.setNumAdultos(novoNumAdultos);
+            reservaOriginal.setNumCriancas(novoNumCriancas);
+            reservaOriginal.setValorTotal(novoValorTotal);
+            
+            reservaDAO.atualizar(reservaOriginal);
+            
+            response.sendRedirect(targetRedirect + "&msg=remarcada");
             
         } catch (NumberFormatException e) {
-            response.sendRedirect("quartos.jsp?erro=dados_invalidos");
+            e.printStackTrace();
+            if (reservaOriginal != null) {
+                request.setAttribute("reserva", reservaOriginal);
+            }
+            request.setAttribute("erroRemarcacao", "Dados de entrada inválidos.");
+            RequestDispatcher rd = request.getRequestDispatcher("/remarcar_reserva.jsp");
+            rd.forward(request, response);
         } catch (Exception e) {
             e.printStackTrace();
-            response.sendRedirect("quartos.jsp?erro=erro_interno"); 
+            response.sendRedirect(targetRedirect + "&erro=falha_ao_remarcar");
         }
     }
 }

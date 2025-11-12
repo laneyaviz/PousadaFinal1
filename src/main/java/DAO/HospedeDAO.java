@@ -6,48 +6,48 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
-
-import org.mindrot.jbcrypt.BCrypt;
-
+import org.mindrot.jbcrypt.BCrypt; 
 import modelos.Hospedes;
-import utils.Conexao;
-
+import utils.Conexao; 
 
 public class HospedeDAO {
 
-    private Connection con = Conexao.getConexao();
-
    
-    public Hospedes salvar(Hospedes hospede) {
+    public Hospedes salvar (Hospedes hospede) {
         String sql = "INSERT INTO hospedes (nome, telefone, email, senha) VALUES (?, ?, ?, ?)";
-
-        // Criptografa a senha antes de salvar
+        
         String hash = BCrypt.hashpw(hospede.getSenha(), BCrypt.gensalt());
 
-        try {
-            PreparedStatement stm = con.prepareStatement(sql);
+        try (Connection con = Conexao.getConexao();
+             PreparedStatement stm = con.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS)) {
+
             stm.setString(1, hospede.getNome());
             stm.setString(2, hospede.getTelefone());
             stm.setString(3, hospede.getEmail());
-            stm.setString(4, hash);
-            stm.execute();
+            stm.setString(4, hash); 
 
+            stm.executeUpdate();
+            
+            try (ResultSet rs = stm.getGeneratedKeys()) {
+                if (rs.next()) {
+                    hospede.setIdHospede(rs.getInt(1));
+                }
+            }
         } catch (SQLException e) {
+            e.printStackTrace();
             throw new RuntimeException("Erro ao salvar hóspede: " + e.getMessage());
         }
-
         return hospede;
     }
 
-    /**
-     * Retorna todos os hóspedes cadastrados.
-     */
+    
     public List<Hospedes> getAll() {
         List<Hospedes> hospedes = new ArrayList<>();
-
-        try {
-            PreparedStatement stm = con.prepareStatement("SELECT * FROM hospedes");
-            ResultSet rs = stm.executeQuery();
+        String sql = "SELECT id_hospede, nome, telefone, email FROM hospedes"; 
+        
+        try (Connection con = Conexao.getConexao();
+             PreparedStatement stm = con.prepareStatement(sql);
+             ResultSet rs = stm.executeQuery()) {
 
             while (rs.next()) {
                 Hospedes h = new Hospedes();
@@ -55,45 +55,120 @@ public class HospedeDAO {
                 h.setNome(rs.getString("nome"));
                 h.setTelefone(rs.getString("telefone"));
                 h.setEmail(rs.getString("email"));
-                h.setSenha(rs.getString("senha")); // senha criptografada
                 hospedes.add(h);
             }
-
         } catch (SQLException e) {
+            e.printStackTrace();
             throw new RuntimeException("Erro ao listar hóspedes: " + e.getMessage());
         }
-
         return hospedes;
     }
-
-  
-    public Hospedes Login(String email, String senha) {
+    
+    
+    public Hospedes buscarPorEmail(String email) {
         Hospedes hospede = null;
+        String sql = "SELECT id_hospede, nome, telefone, email, senha FROM hospedes WHERE email = ?";
 
-        try {
-            // Busca o hóspede pelo e-mail
-            PreparedStatement stm = con.prepareStatement("SELECT * FROM hospedes WHERE email = ?");
-            stm.setString(1, email);
-            ResultSet rs = stm.executeQuery();
+        try (Connection con = Conexao.getConexao();
+             PreparedStatement stmt = con.prepareStatement(sql)) {
 
-            if (rs.next()) {
-                String senhaHash = rs.getString("senha");
-
-                // Verifica se a senha digitada corresponde ao hash armazenado
-                if (BCrypt.checkpw(senha, senhaHash)) {
+            stmt.setString(1, email);
+            
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
                     hospede = new Hospedes();
                     hospede.setIdHospede(rs.getInt("id_hospede"));
                     hospede.setNome(rs.getString("nome"));
                     hospede.setTelefone(rs.getString("telefone"));
                     hospede.setEmail(rs.getString("email"));
-                    hospede.setSenha(senhaHash); // senha armazenada (hash)
+                    
+                    hospede.setSenha(rs.getString("senha")); 
                 }
             }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            throw new RuntimeException("Erro ao buscar hóspede por e-mail: " + e.getMessage());
+        }
+        return hospede;
+    }
+    
+    
+    public Hospedes buscarPorId(int id) {
+        Hospedes hospede = null;
+        String sql = "SELECT id_hospede, nome, telefone, email FROM hospedes WHERE id_hospede = ?";
+
+        try (Connection con = Conexao.getConexao();
+             PreparedStatement stmt = con.prepareStatement(sql)) {
+
+            stmt.setInt(1, id);
+            
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    hospede = new Hospedes();
+                    hospede.setIdHospede(rs.getInt("id_hospede"));
+                    hospede.setNome(rs.getString("nome"));
+                    hospede.setTelefone(rs.getString("telefone"));
+                    hospede.setEmail(rs.getString("email"));
+                    // A senha não é carregada, pois não é necessária
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            throw new RuntimeException("Erro ao buscar hóspede por ID: " + e.getMessage());
+        }
+        return hospede;
+    }
+    
+    
+    public void atualizar(Hospedes hospede) {
+        String sql = "UPDATE hospedes SET nome = ?, telefone = ?, email = ? WHERE id_hospede = ?";
+
+        try (Connection con = Conexao.getConexao();
+             PreparedStatement stm = con.prepareStatement(sql)) {
+
+            stm.setString(1, hospede.getNome());
+            stm.setString(2, hospede.getTelefone());
+            stm.setString(3, hospede.getEmail());
+            stm.setInt(4, hospede.getIdHospede());
+
+            stm.executeUpdate();
 
         } catch (SQLException e) {
-            throw new RuntimeException("Erro ao fazer login: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("Erro ao atualizar hóspede: " + e.getMessage());
         }
+    }
+    
+    public void deletar(int id) {
+        String sql = "DELETE FROM hospedes WHERE id_hospede = ?";
 
-        return hospede;
+        try (Connection con = Conexao.getConexao();
+             PreparedStatement stm = con.prepareStatement(sql)) {
+
+            stm.setInt(1, id);
+            stm.executeUpdate();
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+            throw new RuntimeException("Erro ao deletar hóspede (Pode haver dados relacionados): " + e.getMessage());
+        }
+    }
+    
+    public void atualizarSenha(int idHospede, String novaSenhaPura) {
+        String hash = BCrypt.hashpw(novaSenhaPura, BCrypt.gensalt());
+        String sql = "UPDATE hospedes SET senha = ? WHERE id_hospede = ?";
+
+        try (Connection con = Conexao.getConexao();
+             PreparedStatement stm = con.prepareStatement(sql)) {
+
+            stm.setString(1, hash);
+            stm.setInt(2, idHospede);
+
+            stm.executeUpdate();
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+            throw new RuntimeException("Erro ao atualizar senha: " + e.getMessage());
+        }
     }
 }

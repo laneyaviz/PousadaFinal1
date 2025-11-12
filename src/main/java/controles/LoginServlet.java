@@ -1,7 +1,6 @@
 package controles;
 
 import java.io.IOException;
-
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -9,62 +8,61 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import org.mindrot.jbcrypt.BCrypt; 
 
 import DAO.HospedeDAO;
 import modelos.Hospedes;
 
 @WebServlet("/LoginServlet")
 public class LoginServlet extends HttpServlet {
-	private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 1L;
 
-	
-	@Override
-	protected void doPost(HttpServletRequest request, HttpServletResponse response)
-			throws ServletException, IOException {
+    private HospedeDAO hospedeDAO;
 
-		// 1️⃣ Obtém parâmetros enviados do formulário
-		String emailParam = request.getParameter("email");
-		String senhaParam = request.getParameter("senha");
+    public LoginServlet() {
+        super();
+        this.hospedeDAO = new HospedeDAO();
+    }
 
-		// 2️⃣ Normaliza valores (remove espaços e evita NullPointer)
-		String email = (emailParam != null) ? emailParam.trim() : "";
-		String senha = (senhaParam != null) ? senhaParam.trim() : "";
+    protected void doPost(HttpServletRequest request, HttpServletResponse response) 
+            throws ServletException, IOException {
 
-		// 3️⃣ Prepara variáveis auxiliares
-		HospedeDAO hospedeDAO = new HospedeDAO();
-		Hospedes hospedeLogado = null;
-		String mensagemErro = null;
+        String email = request.getParameter("email");
+        String senha = request.getParameter("senha"); 
 
-		if (email.isEmpty() || senha.isEmpty()) {
-			mensagemErro = "Por favor, preencha todos os campos antes de continuar.";
-		} else {
-			try {
-				hospedeLogado = hospedeDAO.Login(email, senha);
+        Hospedes hospede = hospedeDAO.buscarPorEmail(email); 
 
-				if (hospedeLogado != null) {
-					
-					// ✅ Login bem-sucedido → cria sessão
-					HttpSession session = request.getSession();
-					session.setAttribute("usuarioLogado", hospedeLogado);
+        if (hospede != null) {
+            
+            if (BCrypt.checkpw(senha, hospede.getSenha())) { 
+                
+                HttpSession session = request.getSession();
+                
+                session.setAttribute("usuarioLogado", hospede);
+                
+                response.sendRedirect(request.getContextPath() + "/index.jsp"); 
+                return;
+            }
+        }
 
-					// Redireciona para página inicial ou painel
-					response.sendRedirect("index.jsp");
-					return;
-				} else {
-					// ❌ Login inválido
-					mensagemErro = "E-mail ou senha incorretos.";
-				}
-
-			} catch (RuntimeException e) {
-				// ❗ Erros inesperados (ex: banco, conexão)
-				e.printStackTrace();
-				mensagemErro = "Erro interno no sistema. Tente novamente mais tarde.";
-			}
-		}
-
-		// 6️⃣ Retorna para página de login com mensagem de erro
-		request.setAttribute("erroLogin", mensagemErro);
-		RequestDispatcher rd = request.getRequestDispatcher("index.jsp");
-		rd.forward(request, response);
-	}
+        
+        request.setAttribute("erroLogin", "E-mail ou senha inválidos.");
+        
+        RequestDispatcher rd = request.getRequestDispatcher("entrar.jsp");
+        rd.forward(request, response);
+    }
+    
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) 
+            throws ServletException, IOException {
+        
+        String acao = request.getParameter("acao");
+        
+        if ("logout".equals(acao)) {
+            request.getSession().invalidate();
+            
+            response.sendRedirect(request.getContextPath() + "/entrar.jsp?logout=sucesso");
+        } else {
+             response.sendRedirect(request.getContextPath() + "/entrar.jsp");
+        }
+    }
 }

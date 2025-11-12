@@ -4,114 +4,123 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 import modelos.Quartos;
-import utils.Conexao; 
+import utils.Conexao;
+
 
 public class QuartoDAO {
+    private Connection con = Conexao.getConexao();
 
-    public void inserir(Quartos q) {
-        String sql = "INSERT INTO quartos (numero, tipo, descricao, preco_diaria, capacidade_maxima, disponivel) VALUES (?, ?, ?, ?, ?, ?)";
-        try (Connection conn = Conexao.getConexao();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+   
+    public Quartos salvar(Quartos quarto) {
+        String sql = "INSERT INTO quartos (numero, tipo, preco_diaria, capacidade_maxima, descricao, disponivel) VALUES (?, ?, ?, ?, ?, ?)";
+
+        try (Connection con = Conexao.getConexao();
+             PreparedStatement stm = con.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS)) {
+
+            stm.setInt(1, quarto.getNumero());
+            stm.setString(2, quarto.getTipo());
+            stm.setDouble(3, quarto.getPrecoDiaria());
+            stm.setInt(4, quarto.getCapacidadeMaxima());
+            stm.setString(5, quarto.getDescricao());
+            stm.setBoolean(6, quarto.isDisponivel()); // Booleans são salvos como 0/1 ou TRUE/FALSE dependendo do DB
+
+            stm.executeUpdate();
             
-            stmt.setInt(1, q.getNumero());
-            stmt.setString(2, q.getTipo());
-            stmt.setString(3, q.getDescricao());
-            stmt.setDouble(4, q.getPrecoDiaria());
-            stmt.setInt(5, q.getCapacidadeMaxima()); 
-            stmt.setBoolean(6, q.isDisponivel()); 
-            stmt.executeUpdate();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public List<Quartos> listarTodos() {
-        List<Quartos> lista = new ArrayList<>();
-        String sql = "SELECT * FROM quartos";
-        try (Connection conn = Conexao.getConexao();
-             PreparedStatement stmt = conn.prepareStatement(sql);
-             ResultSet rs = stmt.executeQuery()) {
-            while (rs.next()) {
-                Quartos q = new Quartos();
-                q.setIdQuarto(rs.getInt("id_quarto"));
-                q.setNumero(rs.getInt("numero"));
-                q.setTipo(rs.getString("tipo"));
-                q.setDescricao(rs.getString("descricao"));
-                q.setPrecoDiaria(rs.getDouble("preco_diaria"));
-                q.setCapacidadeMaxima(rs.getInt("capacidade_maxima")); 
-                q.setDisponivel(rs.getBoolean("disponivel")); 
-                lista.add(q);
+            try (ResultSet rs = stm.getGeneratedKeys()) {
+                if (rs.next()) {
+                    quarto.setIdQuarto(rs.getInt(1));
+                }
             }
         } catch (SQLException e) {
             e.printStackTrace();
-        }
-        return lista;
-    }
-
-    public Quartos buscarporId(int id) {
-    	Quartos quarto = null;
-        String sql = "SELECT * FROM quartos WHERE id_quarto = ?";
-        try (Connection conn = Conexao.getConexao();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setInt(1, id);
-            ResultSet rs = stmt.executeQuery();
-            if (rs.next()) {
-                Quartos q = new Quartos();
-                q.setIdQuarto(rs.getInt("id_quarto"));
-                q.setNumero(rs.getInt("numero"));
-                q.setTipo(rs.getString("tipo"));
-                q.setDescricao(rs.getString("descricao"));
-                q.setPrecoDiaria(rs.getDouble("preco_diaria"));
-                q.setCapacidadeMaxima(rs.getInt("capacidade_maxima")); 
-                q.setDisponivel(rs.getBoolean("disponivel"));
-                quarto = q;
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
+            // Lança um erro claro (útil para o Servlet capturar, ex: número duplicado)
+            throw new RuntimeException("Erro ao salvar quarto: " + e.getMessage());
         }
         return quarto;
     }
+    
+    public void atualizar(Quartos quarto) {
+        String sql = "UPDATE quartos SET numero = ?, tipo = ?, preco_diaria = ?, capacidade_maxima = ?, descricao = ?, disponivel = ? WHERE id_quarto = ?";
 
-    public void atualizar(Quartos q) {
-        String sql = "UPDATE quartos SET numero = ?, tipo = ?, descricao = ?, preco_diaria = ?, capacidade_maxima = ?, disponivel = ? WHERE id_quarto = ?";
-        try (Connection conn = Conexao.getConexao();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-            
-            stmt.setInt(1, q.getNumero());
-            stmt.setString(2, q.getTipo());
-            stmt.setString(3, q.getDescricao());
-            stmt.setDouble(4, q.getPrecoDiaria());
-            stmt.setInt(5, q.getCapacidadeMaxima());
-            stmt.setBoolean(6, q.isDisponivel()); 
-            stmt.setInt(7, q.getIdQuarto());
-            stmt.executeUpdate();
+        try (Connection con = Conexao.getConexao();
+             PreparedStatement stm = con.prepareStatement(sql)) {
+
+            stm.setInt(1, quarto.getNumero());
+            stm.setString(2, quarto.getTipo());
+            stm.setDouble(3, quarto.getPrecoDiaria());
+            stm.setInt(4, quarto.getCapacidadeMaxima());
+            stm.setString(5, quarto.getDescricao());
+            stm.setBoolean(6, quarto.isDisponivel());
+            stm.setInt(7, quarto.getIdQuarto()); // 🚨 CRÍTICO: WHERE ID
+
+            stm.executeUpdate();
+
         } catch (SQLException e) {
             e.printStackTrace();
+            throw new RuntimeException("Erro ao atualizar quarto: " + e.getMessage());
         }
     }
 
     public void deletar(int id) {
-        String sql = "DELETE FROM quartos WHERE id_quarto = ?";
+        String sql = "DELETE FROM quartos WHERE id_quarto=?";
         try (Connection conn = Conexao.getConexao();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setInt(1, id);
-            stmt.executeUpdate();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
+             PreparedStatement stm = conn.prepareStatement(sql)) {
+            stm.setInt(1, id);
+            stm.executeUpdate();
+        } catch (SQLException e) { throw new RuntimeException(e); }
     }
-    public int contarQuartos() {
-        String sql = "SELECT COUNT(*) FROM quartos";
-        try (Connection conn = Conexao.getConexao();
-             PreparedStatement ps = conn.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
+
+    public Quartos buscarPorId(int id) {
+        Quartos quarto = null;
+        String sql = "SELECT id_quarto, numero, tipo, preco_diaria, capacidade_maxima, descricao, disponivel FROM quartos WHERE id_quarto = ?";
+
+        try (Connection con = Conexao.getConexao();
+             PreparedStatement stm = con.prepareStatement(sql)) {
+
+            stm.setInt(1, id);
             
-            if (rs.next()) {
-                return rs.getInt(1);
+            try (ResultSet rs = stm.executeQuery()) {
+                if (rs.next()) {
+                    quarto = new Quartos();
+                    quarto.setIdQuarto(rs.getInt("id_quarto"));
+                    quarto.setNumero(rs.getInt("numero"));
+                    quarto.setTipo(rs.getString("tipo"));
+                    quarto.setPrecoDiaria(rs.getDouble("preco_diaria"));
+                    quarto.setCapacidadeMaxima(rs.getInt("capacidade_maxima"));
+                    quarto.setDescricao(rs.getString("descricao"));
+                    quarto.setDisponivel(rs.getBoolean("disponivel"));
+                }
             }
         } catch (SQLException e) {
             e.printStackTrace();
+            throw new RuntimeException("Erro ao buscar quarto por ID: " + e.getMessage());
         }
-        return 0;
+        return quarto;
+    }
+
+    public List<Quartos> getAll() {
+        List<Quartos> quartos = new ArrayList<>();
+        String sql = "SELECT id_quarto, numero, tipo, preco_diaria, capacidade_maxima, descricao, disponivel FROM quartos ORDER BY numero"; 
+
+        try (Connection con = Conexao.getConexao();
+             PreparedStatement stm = con.prepareStatement(sql);
+             ResultSet rs = stm.executeQuery()) {
+
+            while (rs.next()) {
+                Quartos quarto = new Quartos();
+                quarto.setIdQuarto(rs.getInt("id_quarto"));
+                quarto.setNumero(rs.getInt("numero"));
+                quarto.setTipo(rs.getString("tipo"));
+                quarto.setPrecoDiaria(rs.getDouble("preco_diaria"));
+                quarto.setCapacidadeMaxima(rs.getInt("capacidade_maxima"));
+                quarto.setDescricao(rs.getString("descricao"));
+                quarto.setDisponivel(rs.getBoolean("disponivel"));
+                quartos.add(quarto);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            throw new RuntimeException("Erro ao listar quartos: " + e.getMessage());
+        }
+        return quartos;
     }
 }

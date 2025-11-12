@@ -14,9 +14,7 @@ import modelos.Hospedes;
 public class HospedeServlet extends HttpServlet{
 	private static final long serialVersionUID = 1L;
 	
-    /**
-     * Tratamento de requisições POST: Realiza o Cadastro de um novo Hóspede.
-     */
+    
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) 
             throws ServletException, IOException {
         
@@ -37,13 +35,13 @@ public class HospedeServlet extends HttpServlet{
             // Em caso de erro (ex: e-mail duplicado, erro de banco), volta para o cadastro com erro
             System.err.println("Erro ao salvar hóspede: " + e.getMessage());
             request.setAttribute("erroCadastro", "Erro ao cadastrar. E-mail já pode estar em uso ou dados inválidos.");
-            request.getRequestDispatcher("cadastro.jsp").forward(request, response);
+            request.getRequestDispatcher("registro.jsp").forward(request, response);
         }
     }
     
     protected void doGet(HttpServletRequest request, HttpServletResponse response) 
             throws ServletException, IOException {
         // Redireciona qualquer GET para a página de cadastro.
-        response.sendRedirect("cadastro.jsp");
+        response.sendRedirect("registro.jsp");
     }
 }

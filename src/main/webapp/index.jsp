@@ -29,21 +29,21 @@
           <h3>Quarto Vista Mar</h3>
           <p>Experimente o nascer do sol sobre o oceano. Acomoda até 4 pessoas.</p>
           <span class="preco">R$ 280/noite</span>
-          <a href="quartos.html#quarto-vista-mar" class="btn btn-primary">Ver Mais</a>
+          <a href="quartos.jsp#quarto-vista-mar" class="btn btn-primary">Ver Mais</a>
         </div>
         <div class="room-card">
           <img src="imagens/QuartoSuite.jpg" alt="Suíte Família">
           <h3>Suíte Família</h3>
           <p>Conforto e espaço para toda a família. Acomoda até 6 pessoas.</p>
           <span class="preco">R$ 450/noite</span>
-          <a href="quartos.html#suite-familia" class="btn btn-primary">Ver Mais</a>
+          <a href="quartos.jsp#suite-familia" class="btn btn-primary">Ver Mais</a>
         </div>
         <div class="room-card">
           <img src="imagens/QuartoStandard.avif" alt="Quarto Standard">
           <h3>Quarto Standard</h3>
           <p>Perfeito para casais, com todo o conforto e privacidade. Acomoda 2 pessoas.</p>
           <span class="preco">R$ 180/noite</span>
-          <a href="quartos.html#quarto-standard" class="btn btn-primary">Ver Mais</a>
+          <a href="quartos.jsp#quarto-standard" class="btn btn-primary">Ver Mais</a>
         </div>
       </div>
     </div>

@@ -1,8 +1,10 @@
-package controles; 
+package controles;
 
 import java.io.IOException;
+import java.sql.SQLException;
 import java.util.List;
 
+import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -12,61 +14,23 @@ import jakarta.servlet.http.HttpServletResponse;
 import DAO.QuartoDAO;
 import modelos.Quartos;
 
-
 @WebServlet("/QuartoServlet")
 public class QuartoServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
-    private QuartoDAO quartoDAO;
 
-    @Override
-    public void init() throws ServletException {
-        quartoDAO = new QuartoDAO();
-        
-        // ** INÍCIO DA LÓGICA DE INICIALIZAÇÃO DE DADOS **
-        try {
-            // Verifica se a tabela está vazia (0 quartos)
-            if (quartoDAO.contarQuartos() == 0) {
-                
-                System.out.println("Tabela de quartos vazia. Inserindo dados iniciais...");
-                
-                // Quarto 1: Standard
-                Quartos q1 = new Quartos();
-                q1.setNumero(101);
-                q1.setTipo("Quarto Standard");
-                q1.setDescricao("Quarto Standard, ideal para uma viagem rápida.");
-                q1.setPrecoDiaria(150.00);
-                q1.setCapacidadeMaxima(2);
-                q1.setDisponivel(true); // DISPONÍVEL!
-                quartoDAO.inserir(q1); 
+    private QuartoDAO quartoDAO = new QuartoDAO(); 
 
-                // Quarto 2: Luxo
-                Quartos q2 = new Quartos();
-                q2.setNumero(202);
-                q2.setTipo("Suíte Família");
-                q2.setDescricao("Suíte espaçosa com vista para o mar, perfeita para famílias.");
-                q2.setPrecoDiaria(350.00);
-                q2.setCapacidadeMaxima(4);
-                q2.setDisponivel(true); // DISPONÍVEL!
-                quartoDAO.inserir(q2);
-
-                System.out.println("✅ Dois quartos iniciais inseridos com sucesso.");
-            } else {
-                System.out.println("Tabela de quartos já contém dados. Inicialização automática ignorada.");
-            }
-        } catch (Exception e) {
-            System.err.println("❌ Erro ao tentar inicializar quartos no banco de dados. Verifique a conexão e o QuartoDAO.");
-            e.printStackTrace();
-        }
-        // ** FIM DA LÓGICA DE INICIALIZAÇÃO DE DADOS **
+    public QuartoServlet() {
+        super();
     }
 
+    
     protected void doGet(HttpServletRequest request, HttpServletResponse response) 
             throws ServletException, IOException {
         
         String acao = request.getParameter("acao");
-        
         if (acao == null) {
-            acao = "listar"; 
+            acao = "listar"; // Ação padrão
         }
 
         try {
@@ -75,130 +39,73 @@ public class QuartoServlet extends HttpServlet {
                     listarQuartos(request, response);
                     break;
                 case "editar":
-                    exibirFormularioEdicao(request, response);
+                    editarQuarto(request, response);
                     break;
                 case "deletar":
                     deletarQuarto(request, response);
                     break;
                 default:
                     listarQuartos(request, response);
+                    break;
             }
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw new ServletException(e);
+        } catch (Exception ex) {
+            throw new ServletException("Erro na execução da ação GET: " + acao, ex);
         }
     }
+
 
     protected void doPost(HttpServletRequest request, HttpServletResponse response) 
             throws ServletException, IOException {
         
+        request.setCharacterEncoding("UTF-8"); 
+        
         String acao = request.getParameter("acao");
 
-        if (acao != null && acao.equals("salvar")) {
-            salvarQuarto(request, response);
-        } else if (acao != null && acao.equals("atualizar")) {
-            atualizarQuarto(request, response);
-        } else {
-            response.sendRedirect(request.getContextPath() + "/QuartoServlet?acao=listar");
+        try {
+            if ("salvar".equals(acao)) {
+                salvarQuarto(request, response); 
+            } else if ("atualizar".equals(acao)) {
+                atualizarQuarto(request, response); 
+            } else {
+                doGet(request, response); 
+            }
+        } catch (Exception ex) {
+            throw new ServletException("Erro na execução da ação POST: " + acao, ex);
         }
-    }
-
-    private void listarQuartos(HttpServletRequest request, HttpServletResponse response) 
-            throws ServletException, IOException {
-        
-        List<Quartos> listaQuartos = quartoDAO.listarTodos();
-        request.setAttribute("quartos", listaQuartos);
-        request.getRequestDispatcher("listar_quartos.jsp").forward(request, response);
     }
     
-    private void salvarQuarto(HttpServletRequest request, HttpServletResponse response) 
-            throws ServletException, IOException {
+    
+    private void listarQuartos(HttpServletRequest request, HttpServletResponse response)
+            throws SQLException, ServletException, IOException {
         
-        Quartos novoQuarto = new Quartos();
+        List<Quartos> listaQuartos = quartoDAO.getAll();
+        request.setAttribute("quartos", listaQuartos);
         
-        try {
-            String numeroStr = request.getParameter("numero");
-            String capacidadeStr = request.getParameter("capacidadeMaxima");
-            String precoStr = request.getParameter("precoDiaria");
-            String disponivelStr = request.getParameter("disponivel"); 
-
-            boolean disponivel = (disponivelStr != null);
-            
-            novoQuarto.setNumero(Integer.parseInt(numeroStr));
-            novoQuarto.setCapacidadeMaxima(Integer.parseInt(capacidadeStr)); 
-            novoQuarto.setPrecoDiaria(Double.parseDouble(precoStr));
-            novoQuarto.setTipo(request.getParameter("tipo"));
-            novoQuarto.setDescricao(request.getParameter("descricao"));
-            novoQuarto.setDisponivel(disponivel); 
-
-            quartoDAO.inserir(novoQuarto);
-            
-            response.sendRedirect(request.getContextPath() + "/QuartoServlet?acao=listar&msg=adicionado");
-            
-        } catch (NumberFormatException e) {
-            e.printStackTrace();
-            response.sendRedirect(request.getContextPath() + "/QuartoServlet?acao=listar&erro=Dados numéricos inválidos.");
-        } catch (Exception e) {
-            e.printStackTrace();
-            response.sendRedirect(request.getContextPath() + "/QuartoServlet?acao=listar&erro=Falha ao salvar o novo quarto.");
-        }
+        RequestDispatcher rd = request.getRequestDispatcher("listar_quartos.jsp");
+        rd.forward(request, response);
     }
-
-    private void exibirFormularioEdicao(HttpServletRequest request, HttpServletResponse response) 
-            throws ServletException, IOException {
+    
+    private void editarQuarto(HttpServletRequest request, HttpServletResponse response)
+            throws SQLException, ServletException, IOException {
         
         try {
             int id = Integer.parseInt(request.getParameter("id"));
-            Quartos quartoExistente = quartoDAO.buscarporId(id);
+            Quartos quarto = quartoDAO.buscarPorId(id);
             
-            if (quartoExistente != null) {
-                request.setAttribute("quarto", quartoExistente);
-                request.getRequestDispatcher("editar_quarto.jsp").forward(request, response);
+            if (quarto != null) {
+                request.setAttribute("quarto", quarto);
+                RequestDispatcher rd = request.getRequestDispatcher("editar_quarto.jsp");
+                rd.forward(request, response);
             } else {
                 response.sendRedirect(request.getContextPath() + "/QuartoServlet?acao=listar&erro=quarto_nao_encontrado");
             }
         } catch (NumberFormatException e) {
-            response.sendRedirect(request.getContextPath() + "/QuartoServlet?acao=listar&erro=id_invalido");
+             response.sendRedirect(request.getContextPath() + "/QuartoServlet?acao=listar&erro=id_invalido");
         }
     }
     
-    private void atualizarQuarto(HttpServletRequest request, HttpServletResponse response) 
-            throws ServletException, IOException {
-        
-        Quartos quartoAtualizado = new Quartos();
-        
-        try {
-            int id = Integer.parseInt(request.getParameter("idQuarto"));
-            String numeroStr = request.getParameter("numero");
-            String capacidadeStr = request.getParameter("capacidadeMaxima");
-            String precoStr = request.getParameter("precoDiaria");
-            String disponivelStr = request.getParameter("disponivel");
-
-            boolean disponivel = (disponivelStr != null);
-            
-            quartoAtualizado.setIdQuarto(id);
-            quartoAtualizado.setNumero(Integer.parseInt(numeroStr));
-            quartoAtualizado.setCapacidadeMaxima(Integer.parseInt(capacidadeStr));
-            quartoAtualizado.setPrecoDiaria(Double.parseDouble(precoStr));
-            quartoAtualizado.setTipo(request.getParameter("tipo"));
-            quartoAtualizado.setDescricao(request.getParameter("descricao"));
-            quartoAtualizado.setDisponivel(disponivel);
-
-            quartoDAO.atualizar(quartoAtualizado); 
-            
-            response.sendRedirect(request.getContextPath() + "/QuartoServlet?acao=listar&msg=atualizado");
-            
-        } catch (NumberFormatException e) {
-            e.printStackTrace();
-            response.sendRedirect(request.getContextPath() + "/QuartoServlet?acao=listar&erro=Dados de edição inválidos.");
-        } catch (Exception e) {
-            e.printStackTrace();
-            response.sendRedirect(request.getContextPath() + "/QuartoServlet?acao=listar&erro=Falha ao atualizar o quarto.");
-        }
-    }
-
-    private void deletarQuarto(HttpServletRequest request, HttpServletResponse response) 
-            throws ServletException, IOException {
+    private void deletarQuarto(HttpServletRequest request, HttpServletResponse response)
+            throws SQLException, IOException {
         
         try {
             int id = Integer.parseInt(request.getParameter("id"));
@@ -208,7 +115,98 @@ public class QuartoServlet extends HttpServlet {
             response.sendRedirect(request.getContextPath() + "/QuartoServlet?acao=listar&erro=id_invalido");
         } catch (Exception e) {
             e.printStackTrace();
-            response.sendRedirect(request.getContextPath() + "/QuartoServlet?acao=listar&erro=Falha ao deletar o quarto.");
+            response.sendRedirect(request.getContextPath() + "/QuartoServlet?acao=listar&erro=nao_pode_deletar");
+        }
+    }
+
+    
+    private void salvarQuarto(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        
+        try {
+            int numero = Integer.parseInt(request.getParameter("numero"));
+            String tipo = request.getParameter("tipo");
+            double precoDiaria = Double.parseDouble(request.getParameter("precoDiaria"));
+            int capacidadeMaxima = Integer.parseInt(request.getParameter("capacidadeMaxima"));
+            String descricao = request.getParameter("descricao");
+            
+            String statusParam = request.getParameter("status");
+            boolean status = Boolean.parseBoolean(statusParam != null ? statusParam : "true"); 
+
+            Quartos novoQuarto = new Quartos();
+            novoQuarto.setNumero(numero);
+            novoQuarto.setTipo(tipo);
+            novoQuarto.setPrecoDiaria(precoDiaria);
+            novoQuarto.setCapacidadeMaxima(capacidadeMaxima);
+            novoQuarto.setDescricao(descricao);
+            novoQuarto.setDisponivel(status); 
+
+            quartoDAO.salvar(novoQuarto); 
+
+            response.sendRedirect(request.getContextPath() + "/QuartoServlet?acao=listar&msg=cadastrado");
+
+        } catch (NumberFormatException e) {
+            request.setAttribute("erro", "Erro de formato nos dados. Verifique 'Número', 'Preço' e 'Capacidade'.");
+            RequestDispatcher rd = request.getRequestDispatcher("cadastrar_quarto.jsp");
+            rd.forward(request, response);
+        } catch (Exception e) {
+            e.printStackTrace();
+            request.setAttribute("erro", "Erro ao salvar o quarto: " + e.getMessage());
+            RequestDispatcher rd = request.getRequestDispatcher("cadastrar_quarto.jsp");
+            rd.forward(request, response);
+        }
+    }
+
+    
+    private void atualizarQuarto(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        
+        String idParam = request.getParameter("idQuarto"); 
+        
+        try {
+            int id = Integer.parseInt(idParam); // 🚨 CRÍTICO: ID é obrigatório para atualização
+            int numero = Integer.parseInt(request.getParameter("numero"));
+            String tipo = request.getParameter("tipo");
+            double precoDiaria = Double.parseDouble(request.getParameter("precoDiaria"));
+            int capacidadeMaxima = Integer.parseInt(request.getParameter("capacidadeMaxima"));
+            String descricao = request.getParameter("descricao");
+            boolean status = Boolean.parseBoolean(request.getParameter("status")); 
+
+            Quartos quartoAtualizado = new Quartos();
+            quartoAtualizado.setIdQuarto(id); // 🚨 CRÍTICO: Define o ID
+            quartoAtualizado.setNumero(numero);
+            quartoAtualizado.setTipo(tipo);
+            quartoAtualizado.setPrecoDiaria(precoDiaria);
+            quartoAtualizado.setCapacidadeMaxima(capacidadeMaxima);
+            quartoAtualizado.setDescricao(descricao);
+            quartoAtualizado.setDisponivel(status); 
+
+            quartoDAO.atualizar(quartoAtualizado); // Chama o método UPDATE do DAO
+
+            response.sendRedirect(request.getContextPath() + "/QuartoServlet?acao=listar&msg=atualizado");
+
+        } catch (NumberFormatException e) {
+            request.setAttribute("erro", "Erro de formato nos dados. Verifique 'Número', 'Preço' e 'Capacidade'.");
+            recarregarEdicaoComErro(request, response, idParam, "editar_quarto.jsp");
+        } catch (Exception e) {
+            e.printStackTrace();
+            request.setAttribute("erro", "Erro ao atualizar o quarto: " + e.getMessage());
+            recarregarEdicaoComErro(request, response, idParam, "editar_quarto.jsp");
+        }
+    }
+    
+
+    private void recarregarEdicaoComErro(HttpServletRequest request, HttpServletResponse response, 
+                                        String idParam, String jspDestino) throws ServletException, IOException {
+        try {
+             int id = Integer.parseInt(idParam);
+             Quartos quarto = quartoDAO.buscarPorId(id);
+             request.setAttribute("quarto", quarto); 
+             
+             RequestDispatcher rd = request.getRequestDispatcher(jspDestino);
+             rd.forward(request, response);
+        } catch (Exception ex) {
+             response.sendRedirect(request.getContextPath() + "/QuartoServlet?acao=listar&erro=erro_validacao");
         }
     }
 }

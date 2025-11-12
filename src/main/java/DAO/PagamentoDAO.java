@@ -1,98 +1,83 @@
 package DAO;
 
-import java.sql.*;
-import java.util.ArrayList;
-import java.util.List;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+
 import modelos.Pagamentos;
 import utils.Conexao;
 
+import java.sql.Date; 
+
 public class PagamentoDAO {
+    
 
-    public void inserir(Pagamentos p) {
-        String sql = "INSERT INTO pagamentos (id_reserva, valor_total, data_pagamento, forma_pagamento, status) VALUES (?, ?, ?, ?, ?)";
-        try (Connection conn = Conexao.getConexao();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setInt(1, p.getIdReserva());
-            stmt.setDouble(2, p.getValorTotal());
-            stmt.setDate(3, Date.valueOf(p.getDataPagamento()));
-            stmt.setString(4, p.getFormaPagamento());
-            stmt.setString(5, p.getStatus());
-            stmt.executeUpdate();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-    }
+    public Pagamentos salvar(Pagamentos pagamento) {
+        String sql = "INSERT INTO pagamentos (id_reserva, valor_total, data_pagamento, metodo_pagamento, status, parcelas) VALUES (?, ?, ?, ?, ?, ?)";
 
-    public List<Pagamentos> listar() {
-        List<Pagamentos> lista = new ArrayList<>();
-        String sql = "SELECT * FROM pagamentos";
-        try (Connection conn = Conexao.getConexao();
-             PreparedStatement stmt = conn.prepareStatement(sql);
-             ResultSet rs = stmt.executeQuery()) {
-            while (rs.next()) {
-                Pagamentos p = new Pagamentos();
-                p.setIdPagamento(rs.getInt("id_pagamento"));
-                p.setIdReserva(rs.getInt("id_reserva"));
-                p.setValorTotal(rs.getDouble("valor_total"));
-                p.setDataPagamento(rs.getDate("data_pagamento").toLocalDate());
-                p.setFormaPagamento(rs.getString("forma_pagamento"));
-                p.setStatus(rs.getString("status"));
-                lista.add(p);
+        try (Connection con = Conexao.getConexao();
+             PreparedStatement stm = con.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+
+            stm.setInt(1, pagamento.getIdReserva());
+            stm.setDouble(2, pagamento.getValorTotal());
+            
+            stm.setDate(3, Date.valueOf(pagamento.getDataPagamento()));
+            
+            stm.setString(4, pagamento.getFormaPagamento());
+            stm.setString(5, pagamento.getStatus()); 
+
+            stm.executeUpdate();
+            
+            try (ResultSet rs = stm.getGeneratedKeys()) {
+                if (rs.next()) {
+                    pagamento.setIdPagamento(rs.getInt(1));
+                }
             }
         } catch (SQLException e) {
             e.printStackTrace();
-        }
-        return lista;
-    }
-
-    public Pagamentos buscarPorId(int id) {
-    	Pagamentos pagamento = null;
-        String sql = "SELECT * FROM pagamentos WHERE id_pagamento = ?";
-        try (Connection conn = Conexao.getConexao();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setInt(1, id);
-            ResultSet rs = stmt.executeQuery();
-            if (rs.next()) {
-                Pagamentos p = new Pagamentos();
-                p.setIdPagamento(rs.getInt("id_pagamento"));
-                p.setIdReserva(rs.getInt("id_reserva"));
-                p.setValorTotal(rs.getDouble("valor_total"));
-                p.setDataPagamento(rs.getDate("data_pagamento").toLocalDate());
-                p.setFormaPagamento(rs.getString("forma_pagamento"));
-                p.setStatus(rs.getString("status"));
-                return p;
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RuntimeException("Erro ao salvar pagamento: " + e.getMessage());
         }
         return pagamento;
     }
 
-    public void atualizar(Pagamentos p) {
-        String sql = "UPDATE pagamentos SET id_reserva = ?, valor_total = ?, data_pagamento = ?, forma_pagamento = ?, status = ? WHERE id_pagamento = ?";
-        try (Connection conn = Conexao.getConexao();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setInt(1, p.getIdReserva());
-            stmt.setDouble(2, p.getValorTotal());
-            stmt.setDate(3, Date.valueOf(p.getDataPagamento()));
-            stmt.setString(4, p.getFormaPagamento());
-            stmt.setString(5, p.getStatus());
-            stmt.setInt(6, p.getIdPagamento());
-            stmt.executeUpdate();
+    public Pagamentos buscarPorIdReserva(int idReserva) {
+        Pagamentos pagamento = null;
+        String sql = "SELECT * FROM pagamentos WHERE id_reserva = ?";
+
+        try (Connection con = Conexao.getConexao();
+             PreparedStatement stm = con.prepareStatement(sql)) {
+
+            stm.setInt(1, idReserva);
+            
+            try (ResultSet rs = stm.executeQuery()) {
+                if (rs.next()) {
+                    pagamento = mapPagamento(rs);
+                }
+            }
         } catch (SQLException e) {
             e.printStackTrace();
+            throw new RuntimeException("Erro ao buscar pagamento por ID da Reserva: " + e.getMessage());
         }
+        return pagamento;
     }
 
-    public void deletar(int id) {
-        String sql = "DELETE FROM pagamentos WHERE id_pagamento = ?";
-        try (Connection conn = Conexao.getConexao();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setInt(1, id);
-            stmt.executeUpdate();
-        } catch (SQLException e) {
-            e.printStackTrace();
+    private Pagamentos mapPagamento(ResultSet rs) throws SQLException {
+        Pagamentos pagamento = new Pagamentos();
+        pagamento.setIdPagamento(rs.getInt("id_pagamento"));
+        pagamento.setIdReserva(rs.getInt("id_reserva"));
+        pagamento.setValorTotal(rs.getDouble("valor_total"));
+        
+        Date sqlDate = rs.getDate("data_pagamento");
+        if (sqlDate != null) {
+            pagamento.setDataPagamento(sqlDate.toLocalDate());
         }
+        
+        pagamento.setFormaPagamento(rs.getString("metodo_pagamento"));
+        pagamento.setStatus(rs.getString("status"));
+        
+        
+        return pagamento;
     }
 }
-
