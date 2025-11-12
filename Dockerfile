@@ -1,24 +1,34 @@
-# Etapa 1: Usar JDK para compilar as classes Java
+# Etapa 1: Compilar código Java
 FROM eclipse-temurin:17-jdk AS build
 
 WORKDIR /app
 
-# Copia código-fonte Java e JSP
-COPY src/ /app/src/
+# Copia código-fonte e recursos
+COPY src/main/java/ /app/src/
+COPY src/main/webapp/ /app/WebContent/
 
-# Compila as classes Java (ajuste se necessário)
-RUN mkdir -p /app/src/WEB-INF/classes && \
-    find /app/src -name "*.java" > sources.txt && \
-    javac -d /app/src/WEB-INF/classes @sources.txt
+# Cria diretório de classes compiladas
+RUN mkdir -p /app/WebContent/WEB-INF/classes
 
-# Etapa 2: Servir via Tomcat
+# Cria pasta para dependências
+RUN mkdir -p /app/lib
+
+# Baixa dependências necessárias
+RUN wget -O /app/lib/jakarta-servlet.jar https://repo1.maven.org/maven2/jakarta/servlet/jakarta.servlet-api/5.0.0/jakarta.servlet-api-5.0.0.jar && \
+    wget -O /app/lib/mysql-connector.jar https://repo1.maven.org/maven2/com/mysql/mysql-connector-j/8.0.33/mysql-connector-j-8.0.33.jar
+
+# Compila os arquivos Java com classpath explícito
+RUN find /app/src -name "*.java" > sources.txt && \
+    javac -cp "/app/lib/jakarta-servlet.jar:/app/lib/mysql-connector.jar" -d /app/WebContent/WEB-INF/classes @sources.txt
+
+# Etapa 2: Executar no Tomcat
 FROM tomcat:10.1.26-jdk17
 
 # Remove o ROOT padrão do Tomcat
 RUN rm -rf /usr/local/tomcat/webapps/ROOT
 
-# Copia a aplicação para a pasta ROOT do Tomcat
-COPY --from=build /app/src /usr/local/tomcat/webapps/ROOT
+# Copia a aplicação compilada
+COPY --from=build /app/WebContent /usr/local/tomcat/webapps/ROOT
 
 EXPOSE 8080
 
