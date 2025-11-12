@@ -5,41 +5,27 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 
 public class Conexao {
-    private static Connection conexao = null;
 
+    // Retorna uma nova conexão a cada chamada
     public static Connection getConexao() {
-        if (conexao == null) {
-            try {
-                // Lê variáveis de ambiente (Render/Railway)
-                String url = System.getenv("DB_URL");
-                String user = System.getenv("DB_USER");
-                String pass = System.getenv("DB_PASS");
+        try {
+            String url = "jdbc:mysql://localhost:3306/db_pousada?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC";
+            String user = "root";
+            String pass = "root";
 
-                // ⚙️ Fallback para ambiente local (Eclipse)
-                if (url == null || user == null || pass == null) {
-                    url = "jdbc:mysql://localhost:3306/pousada_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC";
-                    user = "root";
-                    pass = "root";
-                }
+            Class.forName("com.mysql.cj.jdbc.Driver");
+            Connection conexao = DriverManager.getConnection(url, user, pass);
 
-                // Carrega o driver MySQL
-                Class.forName("com.mysql.cj.jdbc.Driver");
+            System.out.println("✅ Nova conexão aberta com sucesso.");
+            return conexao;
 
-                // Conecta
-                conexao = DriverManager.getConnection(url, user, pass);
-                System.out.println("✅ Conectado com sucesso ao banco: " + url);
+        } catch (ClassNotFoundException e) {
+            System.err.println("❌ Driver MySQL não encontrado!");
+            throw new RuntimeException("Driver MySQL não encontrado!", e);
 
-            } catch (ClassNotFoundException e) {
-                System.err.println("❌ Driver MySQL não encontrado!");
-                e.printStackTrace();
-            } catch (SQLException e) {
-                System.err.println("❌ Erro de conexão SQL: " + e.getMessage());
-                e.printStackTrace();
-            } catch (Exception e) {
-                System.err.println("❌ Erro inesperado ao conectar: " + e.getMessage());
-                e.printStackTrace();
-            }
+        } catch (SQLException e) {
+            System.err.println("❌ Erro ao conectar com o banco: " + e.getMessage());
+            throw new RuntimeException("Erro ao conectar com o banco: " + e.getMessage(), e);
         }
-        return conexao;
     }
 }
