@@ -21,9 +21,6 @@ public class AdminFilter implements Filter {
 
 	public void destroy() {}
 
-    /**
-     * Verifica se o usuário logado é o Administrador (idHospede == 1).
-     */
 	public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) 
             throws IOException, ServletException {
         

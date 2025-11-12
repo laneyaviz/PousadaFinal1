@@ -1,35 +1,77 @@
-# Etapa 1 — Compilar código-fonte Java (Java 11)
-FROM eclipse-temurin:11-jdk AS build
+# =============================== 
 
-WORKDIR /app
+# Etapa 1: Compilar o código Java 
 
-# Copia código fonte
-COPY src/ /app/src/
-COPY webapps/ /app/webapps/
+# =============================== 
 
-# Cria diretório para classes compiladas
-RUN mkdir -p /app/webapps/WEB-INF/classes
+FROM eclipse-temurin:17-jdk AS build 
 
-# Baixa dependências necessárias (Jakarta Servlet + MySQL)
-RUN apt-get update && apt-get install -y wget && \
-    mkdir -p /app/lib && \
-    wget -O /app/lib/jakarta-servlet.jar https://repo1.maven.org/maven2/jakarta/servlet/jakarta.servlet-api/5.0.0/jakarta.servlet-api-5.0.0.jar && \
-    wget -O /app/lib/mysql-connector.jar https://repo1.maven.org/maven2/com/mysql/mysql-connector-j/8.0.33/mysql-connector-j-8.0.33.jar
+WORKDIR /app 
+ 
 
-# Compila as classes Java com o classpath correto
-RUN find /app/src -name "*.java" > sources.txt && \
-    javac -cp "/app/lib/jakarta-servlet.jar:/app/lib/mysql-connector.jar" \
-          -d /app/webapps/WEB-INF/classes @sources.txt
+# Copia o código-fonte e dependências 
 
-# Etapa 2 — Executar no Tomcat 10 com Java 11
-FROM tomcat:10.1.26-jdk11
+COPY src/main/java/ ./src/main/java/ 
 
-# Remove o app padrão
-RUN rm -rf /usr/local/tomcat/webapps/ROOT
+COPY src/main/webapp/WEB-INF/lib ./lib 
+ 
 
-# Copia o conteúdo da aplicação compilada
-COPY --from=build /app/webapps /usr/local/tomcat/webapps/ROOT
+# Cria diretório de classes compiladas 
 
-EXPOSE 8080
+RUN mkdir -p build/classes 
 
-CMD ["catalina.sh", "run"]
+
+# Baixa o jakarta.servlet-api.jar para compilar (Tomcat fornece no runtime) 
+
+RUN curl -o lib/jakarta.servlet-api.jar \ 
+
+https://repo1.maven.org/maven2/jakarta/servlet/jakarta.servlet-api/6.0.0/jakarta.servlet-api-6.0.0.jar 
+ 
+
+# Compila todos os .java, incluindo dependências 
+
+RUN find src/main/java -name "*.java" > sources.txt && \ 
+
+javac -cp "lib/*" -d build/classes @sources.txt 
+ 
+
+# =============================== 
+
+# Etapa 2: Rodar no Tomcat 
+
+# =============================== 
+
+FROM tomcat:10.1.26-jdk17 
+
+ 
+
+# Remove o aplicativo padrão ROOT 
+
+RUN rm -rf /usr/local/tomcat/webapps/ROOT 
+
+ 
+
+# Copia arquivos da aplicação compilada 
+
+#COPY src/main/webapp /usr/local/tomcat/webapps/AgendaServlet/ 
+
+#COPY --from=build /app/build/classes /usr/local/tomcat/webapps/AgendaServlet/WEB-INF/classes 
+
+ 
+
+COPY src/main/webapp /usr/local/tomcat/webapps/ROOT/ 
+
+COPY --from=build /app/build/classes /usr/local/tomcat/webapps/ROOT/WEB-INF/classes 
+
+# Expõe a porta padrão do Tomcat 
+
+EXPOSE 8080 
+
+
+# Inicia o Tomcat 
+
+CMD ["catalina.sh", "run"] 
+
+ 
+
+ 
