@@ -6,40 +6,37 @@ import java.sql.SQLException;
 
 public class Conexao {
 
-    private static final String RAILWAY_URL_PREFIX = "jdbc:";
-    
+    // Fallback local caso as variáveis do Railway não sejam encontradas
     private static final String DEFAULT_URL = "jdbc:mysql://localhost:3306/railway?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC";
+    private static final String DEFAULT_USER = "root";
+    private static final String DEFAULT_PASS = "XegHhUBnYKoGEfBQKUTFVKbhvIfggeJd"; 
 
     public static Connection getConexao() {
         
-        String rawUrl = System.getenv("DATABASE_URL");
-        boolean usingRailway = false;
+        // Lendo as variáveis customizadas configuradas no Railway
+        String url = System.getenv("DB_URL");
+        String user = System.getenv("DB_USER");
+        String pass = System.getenv("DB_PASS");
+        
+        boolean usingRailway = true;
 
-        String jdbcUrl;
-
-        // Verifica e ajusta o formato da URL
-        if (rawUrl != null && !rawUrl.isEmpty()) {
-            if (rawUrl.startsWith("mysql://")) {
-                // Converte de 'mysql://' para 'jdbc:mysql://'
-                jdbcUrl = RAILWAY_URL_PREFIX + rawUrl;
-                usingRailway = true;
-            } else {
-                jdbcUrl = rawUrl;
-                usingRailway = true;
-            }
-        } else {
-            jdbcUrl = DEFAULT_URL;
+        if (url == null || url.isEmpty()) {
+            url = DEFAULT_URL;
+            user = DEFAULT_USER;
+            pass = DEFAULT_PASS;
+            usingRailway = false;
         }
 
         try {
             Class.forName("com.mysql.cj.jdbc.Driver");
             
-            Connection conexao = DriverManager.getConnection(jdbcUrl);
+            // Tenta a conexão usando os valores lidos
+            Connection conexao = DriverManager.getConnection(url, user, pass);
 
             if (usingRailway) {
-                 System.out.println("✅ Conexão Railway (Banco 'railway') aberta com sucesso.");
+                 System.out.println("✅ Conexão Railway aberta com sucesso.");
             } else {
-                 System.out.println("⚠️ Conexão local (Banco 'railway') aberta com sucesso.");
+                 System.out.println("⚠️ Conexão local aberta com sucesso.");
             }
             
             return conexao;
@@ -49,9 +46,9 @@ public class Conexao {
             throw new RuntimeException("Driver MySQL não encontrado!", e);
 
         } catch (SQLException e) {
-            System.err.println("❌ Erro ao conectar com o banco. Verifique as credenciais e o nome 'railway'.");
-            System.err.println("   URL usada na falha: " + jdbcUrl);
-            throw new RuntimeException("Erro ao conectar com o banco: " + e.getMessage(), e);
+            System.err.println("❌ Erro ao conectar com o banco. O problema é quase sempre o Host/Porta.");
+            System.err.println("   URL usada na falha: " + url);
+            throw new RuntimeException("Erro ao conectar com o banco: Communications link failure", e);
         }
     }
 }
