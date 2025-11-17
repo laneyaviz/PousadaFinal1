@@ -2,35 +2,32 @@ package utils;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.SQLException;
 
 public class Conexao {
 
+    private static Connection conexao = null;
+
     public static Connection getConexao() {
-
-        // 1. Tenta ler a variável de ambiente MYSQL_URL
-        String jdbcUrl = System.getenv("MYSQL_URL");
-
-        // 2. Se estiver nula, usa diretamente sua URL (para facilitar o grupo)
-        if (jdbcUrl == null || jdbcUrl.isEmpty()) {
-            System.out.println("⚠️ MYSQL_URL não encontrada. Usando URL padrão do Railway.");
-            jdbcUrl = "mysql://root:XegHhUBnYKoGEfBQkUTFVKbhvIfggeJd@switchyard.proxy.rlwy.net:41269/railway";
-        }
-
-        // 3. Ajusta para formato JDBC
-        if (jdbcUrl.startsWith("mysql://")) {
-            jdbcUrl = "jdbc:" + jdbcUrl;
+        if (conexao != null) {
+            return conexao;
         }
 
         try {
-            Class.forName("com.mysql.cj.jdbc.Driver");
-            Connection conn = DriverManager.getConnection(jdbcUrl);
-            System.out.println("✅ Conectado ao Railway com sucesso!");
-            return conn;
+            // Lê as variáveis do Render
+            String url = System.getenv("DB_URL");
+            String user = System.getenv("DB_USER");
+            String pass = System.getenv("DB_PASS");
 
-        } catch (Exception e) {
-            System.err.println("❌ Erro ao conectar no Railway.");
-            System.err.println("URL usada: " + jdbcUrl);
-            throw new RuntimeException("Erro na conexão: " + e.getMessage(), e);
+            if (url == null || user == null || pass == null) {
+                throw new RuntimeException("Variáveis de ambiente não encontradas!");
+            }
+
+            conexao = DriverManager.getConnection(url, user, pass);
+            return conexao;
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Erro ao conectar com o banco: " + e.getMessage(), e);
         }
     }
 }
