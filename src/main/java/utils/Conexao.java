@@ -5,35 +5,32 @@ import java.sql.DriverManager;
 
 public class Conexao {
 
-    private static final String LOCAL_URL = "jdbc:mysql://localhost:3306/db_pousada?useSSL=false";
-    private static final String LOCAL_USER = "root";
-    private static final String LOCAL_PASS = "root";
+    public static Connection getConexao() {
 
-    public static Connection getConnection() {
+        // 1. Tenta ler a variável de ambiente MYSQL_URL
+        String jdbcUrl = System.getenv("MYSQL_URL");
 
-        // Tenta pegar variáveis do Railway
-        String host = System.getenv("MYSQLHOST");
-        String port = System.getenv("MYSQLPORT");
-        String database = System.getenv("MYSQLDATABASE");
-        String user = System.getenv("MYSQLUSER");
-        String password = System.getenv("MYSQLPASSWORD");
+        // 2. Se estiver nula, usa diretamente sua URL (para facilitar o grupo)
+        if (jdbcUrl == null || jdbcUrl.isEmpty()) {
+            System.out.println("⚠️ MYSQL_URL não encontrada. Usando URL padrão do Railway.");
+            jdbcUrl = "mysql://root:XegHhUBnYKoGEfBQkUTFVKbhvIfggeJd@switchyard.proxy.rlwy.net:41269/railway";
+        }
+
+        // 3. Ajusta para formato JDBC
+        if (jdbcUrl.startsWith("mysql://")) {
+            jdbcUrl = "jdbc:" + jdbcUrl;
+        }
 
         try {
-
-            if (host != null && port != null && database != null) {
-                System.out.println("🔗 Conectando ao Railway...");
-
-                String url = "jdbc:mysql://mysql.railway.internal:3306/railway?useSSL=false&allowPublicKeyRetrieval=true";
-
-                return DriverManager.getConnection(url, user, password);
-            }
-
-            // Caso contrário, usa LOCAL
-            System.out.println("⚠️ Usando banco LOCAL.");
-            return DriverManager.getConnection(LOCAL_URL, LOCAL_USER, LOCAL_PASS);
+            Class.forName("com.mysql.cj.jdbc.Driver");
+            Connection conn = DriverManager.getConnection(jdbcUrl);
+            System.out.println("✅ Conectado ao Railway com sucesso!");
+            return conn;
 
         } catch (Exception e) {
-            throw new RuntimeException("Erro ao conectar: " + e.getMessage(), e);
+            System.err.println("❌ Erro ao conectar no Railway.");
+            System.err.println("URL usada: " + jdbcUrl);
+            throw new RuntimeException("Erro na conexão: " + e.getMessage(), e);
         }
     }
 }
