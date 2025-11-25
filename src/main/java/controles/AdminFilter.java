@@ -43,7 +43,7 @@ public class AdminFilter implements Filter {
         }
 
         // 2. VERIFICAÇÃO: O usuário é o Administrador?
-        // Assumimos que o Admin tem o ID fixo = 1 no banco de dados.
+        // Assumimos o Admin que tem o ID fixo = 1 no banco de dados.
         if (usuarioLogado.getIdHospede() != 1) {
             // Se não for o Admin, redireciona para uma página de erro ou index
             res.sendError(HttpServletResponse.SC_FORBIDDEN, "Acesso negado. Apenas Administradores.");
