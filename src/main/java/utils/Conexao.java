@@ -2,33 +2,45 @@ package utils;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.io.FileInputStream;
+import java.io.InputStream;
+import java.util.Properties;
 
 public class Conexao {
+
+    private static Properties props = new Properties();
+
+    static {
+        try {
+            InputStream is = Conexao.class.getClassLoader().getResourceAsStream("app.config");
+
+            if (is == null) {
+                throw new RuntimeException("❌ Arquivo app.config não encontrado!");
+            }
+
+            props.load(is);
+
+        } catch (Exception e) {
+            throw new RuntimeException("❌ Erro ao carregar app.config: " + e.getMessage(), e);
+        }
+    }
 
     public static Connection getConexao() {
 
         try {
-            // Lê as variáveis de ambiente
-            String url = System.getenv("MYSQL_URL");
-            String user = System.getenv("MYSQLUSER");
-            String pass = System.getenv("MYSQLPASSWORD");
+            String url = props.getProperty("MYSQL_URL");
+            String user = props.getProperty("MYSQLUSER");
+            String pass = props.getProperty("MYSQLPASSWORD");
 
-            System.out.println("🔎 MYSQL_URL: " + url);
-            System.out.println("🔎 MYSQLUSER: " + user);
+            System.out.println("🔎 URL carregada: " + url);
+            System.out.println("🔎 USER carregado: " + user);
 
-            if (url == null || user == null || pass == null) {
-                throw new RuntimeException("❌ Variáveis de ambiente não foram carregadas corretamente!");
-            }
-
-            // Converte a URL padrão do Railway para JDBC
-            // Exemplo:
-            // mysql://user:pass@host:port/database
-            // ↓ vira ↓
-            // jdbc:mysql://host:port/database?useSSL=false&allowPublicKeyRetrieval=true
+            if (url == null || user == null || pass == null)
+                throw new RuntimeException("❌ Variáveis não carregadas no app.config!");
 
             if (url.startsWith("mysql://")) {
-                url = url.replace("mysql://", "jdbc:mysql://");
-                url += "?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true";
+                url = url.replace("mysql://", "jdbc:mysql://") +
+                      "?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true";
             }
 
             Class.forName("com.mysql.cj.jdbc.Driver");
