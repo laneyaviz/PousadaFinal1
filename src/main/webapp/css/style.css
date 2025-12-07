@@ -1,4 +1,20 @@
-/* 🔄 Reset básico para remover margens e paddings padrão dos navegadores */
+/* --- VARIÁVEIS DE COR E ESTILO --- */
+:root {
+  --primary-color: #1e40af;       /* Azul Escuro Principal (Botões e Títulos) */
+  --secondary-color: #ffd700;    /* Amarelo Ouro (Destaque/Contraste) */
+  --light-bg: #f0f8ff;           /* Fundo Suave */
+  --mid-blue: #60a2dd;           /* Azul Médio para Header */
+  --dark-bg: #1e3a8a;            /* Azul Escuro para Footer */
+  --text-color: #333;            /* Cor Padrão do Texto */
+  --font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  
+  /* Cores de Feedback para a página de Admin */
+  --success-color: #27ae60;
+  --error-color: #c0392b;
+  --table-header-bg: #f4f6f9;
+}
+
+/* 🔄 Reset básico e Box Sizing */
 * {
   margin: 0;
   padding: 0;
@@ -7,56 +23,101 @@
 
 /* 🌐 Estilo geral do corpo da página */
 body {
-  font-family: 'Segoe UI', sans-serif; /* Fonte moderna e legível */
-  line-height: 1.6;                    /* Espaçamento entre linhas para melhor leitura */
-  background-color: #f0f8ff;           /* Fundo claro e suave */
-  color: #333;                         /* Cor de texto padrão escura */
+  font-family: var(--font-family);
+  line-height: 1.6;
+  background-color: var(--light-bg);
+  color: var(--text-color);
+  -webkit-font-smoothing: antialiased;
 }
 
 /* 📦 Container centralizado com largura máxima */
 .container {
   max-width: 1200px;
-  margin: 0 auto;       /* Centraliza horizontalmente */
-  padding: 0 20px;      /* Espaçamento lateral interno */
+  margin: 0 auto;
+  padding: 0 20px;
 }
+
+/* --- BOTÕES E ELEMENTOS DE INTERAÇÃO (Gerais e Admin) --- */
 
 /* 🔘 Botões genéricos */
 .btn {
+  display: inline-flex; 
+  align-items: center; 
+  justify-content: center;
+  gap: 8px; 
+
   padding: 10px 20px;
   border: none;
   border-radius: 6px;
-  margin-left: 5px;
-  margin-bottom: 6px;
+  margin-left: 5px; /* Mantido do original, mas idealmente centralizado em layout flex */
+  margin-bottom: 6px; /* Mantido do original */
   cursor: pointer;
-  transition: background-color 0.3s ease; /* Suaviza a mudança de cor ao passar o mouse */
+  font-weight: 600;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  text-align: center;
+  line-height: 1; 
+  text-transform: uppercase; /* Padrão Admin/Ações */
+  font-size: 0.9em;
 }
 
 /* 🔵 Botão principal (azul escuro) */
 .btn-primary {
-  background-color: #1e40af;
-  color: #ffd700;
+  background-color: var(--primary-color);
+  color: var(--secondary-color);
 }
 
 .btn-primary:hover {
   background-color: #1c3aa9;
+  transform: translateY(-1px); 
 }
 
-/* 🔷 Botão secundário (azul claro) */
+/* 🔷 Botão secundário (amarelo ouro) */
 .btn-secondary {
-  background-color: #ffd700;
-  color: #1e40af;
+  /* No Contexto Geral (Header, Hero) */
+  background-color: var(--secondary-color);
+  color: var(--primary-color);
+  border: 2px solid var(--primary-color);
 }
 
 .btn-secondary:hover {
-  background-color: #c7d2fe;
+  background-color: #c7d2fe; 
+  border-color: var(--primary-color);
+  transform: translateY(-1px);
 }
 
-/* 🧭 Cabeçalho do site */
+/* Estilos de Botões de Ação Específicos (para Tabela Admin) */
+.btn-secondary.btn-small {
+    background-color: #95a5a6; /* Cinza suave para Editar (Admin) */
+    color: white;
+    border: none;
+}
+.btn-secondary.btn-small:hover {
+    background-color: #7f8c8d;
+    transform: translateY(-1px);
+}
+
+.btn-danger {
+    background-color: #e74c3c; /* Vermelho forte para Deletar (Admin) */
+    color: white;
+}
+.btn-danger:hover {
+    background-color: #c0392b;
+    transform: translateY(-1px);
+}
+.btn-small {
+    padding: 6px 12px;
+    font-size: 0.8em;
+    text-transform: none; /* Ações menores não precisam ser UPPERCASE */
+    margin: 2px;
+}
+
+/* --- CABEÇALHO --- */
 header {
-  background-color: #60a2dd;
+  background-color: var(--mid-blue);
   padding: 20px 0;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05); /* Sombra leve abaixo do header */
-  height: 100px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  min-height: 80px;
   display: flex;
   justify-content: center;
 }
@@ -66,46 +127,74 @@ header {
   display: flex;
   justify-content: space-between;
   align-items: center;
- padding: 0 20px;
+  width: 100%;
+  max-width: 1200px;
+  padding: 0 20px;
 }
 
-
-
+/* 🌅 Seção Logo */
+.logo img {
+  max-width: 90px;
+  height: auto;
+}
 
 /* 🔗 Menu de navegação */
+.menu {
+  display: flex;
+  list-style: none;
+  gap: 25px;
+  /* (Se for usado como lista: ul.menu { padding: 0; }) */
+}
 .menu a {
-  
-  margin: 0 15px;
+  margin: 0 15px; /* Original */
   text-decoration: none;
-  color: #ffd700;
-  font-weight: 500;
+  color: var(--secondary-color);
+  font-weight: 600;
+  padding: 5px 0;
+  transition: color 0.3s, border-bottom 0.3s;
 }
 
 .menu a:hover {
-  text-decoration: underline;
-}
-/* 🌅 Seção Logo Isso evita que a logo fique desproporcional. */
-.logo img {
-  max-width: 90px; /* imita a largura*/
-  max-height: 80px;
+  color: white;
+  border-bottom: 2px solid white;
+  text-decoration: none; /* Garante que o hover original é substituído */
 }
 
-/* 🌅 Seção Hero (destaque inicial) */
+/* --- SEÇÃO HERO --- */
 .hero {
   background: url('Praião.jpg') center/cover no-repeat;
   color: white;
   text-align: center;
-  padding: 100px 20px;
+  padding: 120px 20px; 
+  position: relative;
+}
+.hero::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.3); 
+    z-index: 1;
+}
+
+.hero h2, .hero p, .hero-buttons {
+    position: relative;
+    z-index: 2;
 }
 
 .hero h2 {
-  font-size: 48px;
+  font-size: clamp(32px, 5vw, 48px);
   margin-bottom: 20px;
 }
 
 .hero p {
-  font-size: 20px;
-  margin-bottom: 30px;
+  font-size: clamp(16px, 2.5vw, 20px);
+  margin-bottom: 40px;
+  max-width: 700px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .hero-buttons {
@@ -114,58 +203,61 @@ header {
   gap: 20px;
 }
 
-/* 🛏️ Seção de Quartos */
+/* --- SEÇÃO QUARTOS --- */
+.rooms {
+    padding: 60px 20px;
+}
+
 .rooms h2 {
   text-align: center;
-  color: #1e40af;
+  color: var(--primary-color);
   margin-bottom: 40px;
 }
 
 /* 📦 Lista de quartos em grid responsivo */
 .room-list {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 30px;
 }
 
 /* 🧾 Card individual de quarto */
 .room-card {
   background-color: white;
-  border-radius: 8px;
+  border-radius: 10px;
   overflow: hidden;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.05);
-  transition: transform 0.3s ease;
-  padding-bottom: 20px;
-  margin-left: 5px;
+  box-shadow: 0 6px 15px rgba(0,0,0,0.1);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
 .room-card:hover {
-  transform: translateY(-5px); /* Efeito de elevação ao passar o mouse */
+  transform: translateY(-8px);
+  box-shadow: 0 10px 20px rgba(0,0,0,0.15);
 }
 
 .room-card img {
   width: 100%;
-  height: 200px;
+  height: 220px;
   object-fit: cover;
 }
 
+.room-card-content {
+    padding: 15px 15px 20px;
+}
+
 .room-card h3 {
-  margin: 15px;
-  color: #1e40af;
+  margin: 0 0 10px;
+  color: var(--primary-color);
 }
 
 .room-card p {
-  margin: 0 15px 10px;
-}
-.room-card button{
-
-  
+  margin: 0 0 15px;
 }
 
 /* 📋 Lista de comodidades */
 .comodidades {
   list-style: none;
-  margin: 0 15px 10px;
+  margin: 15px 0;
   padding: 0;
   display: flex;
   flex-wrap: wrap;
@@ -174,21 +266,23 @@ header {
 
 .comodidades li {
   background-color: #e0e7ff;
-  color: #1e40af;
-  padding: 4px 8px;
+  color: var(--primary-color);
+  padding: 5px 10px;
   border-radius: 4px;
-  font-size: 12px;
+  font-size: 13px;
+  font-weight: 500;
 }
 
 /* 💰 Preço do quarto */
 .preco {
   display: block;
-  margin: 0 15px 10px;
-  font-weight: bold;
-  color: #1e40af;
+  margin: 10px 0 15px;
+  font-size: 1.2em;
+  font-weight: 700;
+  color: #d97706;
 }
 
-/* 💬 Seção de Depoimentos */
+/* --- SEÇÃO DEPOIMENTOS --- */
 .testimonials {
   background-color: #eef2ff;
   padding: 60px 20px;
@@ -196,45 +290,48 @@ header {
 
 .testimonials h2 {
   text-align: center;
-  color: #1e40af;
+  color: var(--primary-color);
   margin-bottom: 40px;
 }
 
 .testimonial-list {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 30px;
 }
 
 /* 🧍 Card de depoimento */
 .testimonial-card {
   background-color: white;
-  padding: 20px;
-  border-radius: 8px;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+  padding: 25px;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
   text-align: center;
+  border-top: 5px solid var(--secondary-color);
 }
 
 .testimonial-card .avatar img {
-  width: 48px;
-  height: 48px;
+  width: 60px;
+  height: 60px;
   border-radius: 50%;
-  margin-bottom: 10px;
+  object-fit: cover;
+  margin-bottom: 15px;
 }
 
 .stars {
-  color: #facc15; /* Amarelo para estrelas */
+  color: #facc15;
   margin-top: 10px;
+  font-size: 1.2em;
 }
 
-/* 📞 Seção de Contato */
+/* --- SEÇÃO CONTATO --- */
 .contact {
   padding: 60px 20px;
 }
 
 .contact h2 {
   text-align: center;
-  color: #1e40af;
+  color: var(--primary-color);
   margin-bottom: 30px;
 }
 
@@ -247,28 +344,36 @@ form {
 }
 
 input, textarea {
-  padding: 10px;
+  padding: 12px;
   border: 1px solid #cbd5e1;
   border-radius: 6px;
   font-size: 16px;
+  width: 100%;
+}
+form .btn-primary {
+    margin-top: 10px;
+    width: 100%;
 }
 
-/* 🧭 Rodapé */
+
+/* --- RODAPÉ --- */
 footer {
-  background-color: #1e3a8a;
-  color: #ffd700;
+  background-color: var(--dark-bg);
+  color: var(--secondary-color);
   padding: 40px 20px 20px;
 }
 
 .footer-content {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 30px;
-  margin-bottom: 20px;
+  margin-bottom: 30px;
 }
 
 .footer-column h3 {
-  margin-bottom: 10px;
+  margin-bottom: 15px;
+  font-size: 1.1em;
+  color: white;
 }
 
 .footer-column ul {
@@ -276,9 +381,14 @@ footer {
   padding: 0;
 }
 
+.footer-column ul li {
+    margin-bottom: 8px;
+}
+
 .footer-column ul li a {
-  color: #ffd700;
+  color: var(--secondary-color);
   text-decoration: none;
+  transition: text-decoration 0.3s;
 }
 
 .footer-column ul li a:hover {
@@ -288,19 +398,20 @@ footer {
 .footer-bottom {
   text-align: center;
   font-size: 14px;
-  border-top: 1px solid #ffd700;
-  padding-top: 10px;
+  border-top: 1px solid rgba(255, 215, 0, 0.3);
+  padding-top: 15px;
 }
-/* Modal reserva */
+
+/* --- MODAL DE RESERVA --- */
 .modal {
   display: none; 
   position: fixed;
-  z-index: 999;
+  z-index: 1000; 
   left: 0;
   top: 0;
   width: 100%; 
   height: 100%;
-  background-color: rgba(0,0,0,0.6);
+  background-color: rgba(0,0,0,0.7);
   justify-content: center;
   align-items: center;
 }
@@ -310,26 +421,156 @@ footer {
   padding: 30px;
   border-radius: 12px;
   width: 90%;
-  max-width: 400px;
+  max-width: 450px;
   position: relative;
-  animation: fadeIn 0.3s ease;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  animation: fadeIn 0.3s ease-out;
 }
 
 .close-btn {
   position: absolute;
   top: 10px;
   right: 15px;
-  font-size: 24px;
-  color: #444;
+  font-size: 30px;
+  color: #aaa;
   cursor: pointer;
+  line-height: 1;
 }
 
 .close-btn:hover {
-  color: red;
+  color: var(--primary-color);
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(-20px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
 }
 
+
+/* --- ESTILOS DE ADMIN/GESTÃO (INTEGRADOS) --- */
+
+/* Título de Gestão */
+main.container h2 {
+    /* Mantendo a cor #2c3e50 do Admin, mas usando a linha de destaque */
+    color: #2c3e50; 
+    border-bottom: 3px solid #3498db; 
+    padding-bottom: 10px;
+    margin-bottom: 30px;
+}
+
+/* Mensagens de Feedback */
+.feedback {
+    padding: 15px;
+    margin: 20px 0;
+    border-radius: 6px;
+    font-weight: bold;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.feedback.success {
+    background-color: #e6f7e9;
+    color: var(--success-color);
+    border: 1px solid #2ecc71;
+}
+.feedback.error {
+    background-color: #fcebeb;
+    color: var(--error-color);
+    border: 1px solid #e74c3c;
+}
+
+/* Tabela de Dados (data-table) */
+.data-table {
+    width: 100%;
+    border-collapse: separate; 
+    border-spacing: 0;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1); 
+    background-color: white;
+    margin-top: 25px;
+    border-radius: 8px; 
+    overflow: hidden; 
+}
+.data-table thead {
+    background-color: var(--table-header-bg); 
+    color: var(--text-color);
+}
+.data-table th, .data-table td {
+    padding: 15px 18px;
+    text-align: left;
+    border-bottom: 1px solid #ecf0f1; 
+}
+.data-table th {
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-size: 0.9em;
+}
+.data-table tbody tr:last-child td {
+    border-bottom: none;
+}
+.data-table tbody tr:hover {
+    background-color: #f7f9fb; 
+    transition: background-color 0.2s ease;
+}
+
+/* Alinhamento de Conteúdo Numérico */
+.align-center { text-align: center !important; }
+
+/* Estilos para o status de disponibilidade (Formato Pílula) */
+.status-sim { 
+    color: white;
+    font-weight: bold; 
+    padding: 5px 10px;
+    border-radius: 15px; 
+    background-color: var(--success-color);
+    display: inline-block;
+    font-size: 0.9em;
+}
+.status-nao { 
+    color: white;
+    font-weight: bold; 
+    padding: 5px 10px;
+    border-radius: 15px; 
+    background-color: var(--error-color); 
+    display: inline-block;
+    font-size: 0.9em;
+}
+
+
+/* --- MEDIA QUERIES (Responsividade) --- */
+@media (max-width: 768px) {
+    /* Header */
+    .header-content {
+        flex-direction: column;
+        text-align: center;
+        gap: 15px;
+    }
+    .menu {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 10px;
+    }
+    .menu a {
+        font-size: 0.9em;
+    }
+    
+    /* Hero */
+    .hero {
+        padding: 80px 20px;
+    }
+    .hero-buttons {
+        flex-direction: column;
+    }
+    .hero .btn {
+        width: 100%;
+        max-width: 300px;
+        margin: 5px auto;
+    }
+
+    /* Footer */
+    .footer-content {
+        grid-template-columns: 1fr;
+        text-align: center;
+    }
+}
