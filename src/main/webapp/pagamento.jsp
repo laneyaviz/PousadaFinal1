@@ -119,7 +119,7 @@
         </p>
         
         <p style="font-style: italic; color: #7f8c8d; font-size: 0.9em;">
-            * Ao confirmar, sua reserva será marcada como **'Pendente'** e aguardará a confirmação simulada da transferência.
+            * Ao confirmar, sua reserva será marcada como **Pendente** e aguardará a confirmação simulada da transferência.
         </p>
     </div>
 
